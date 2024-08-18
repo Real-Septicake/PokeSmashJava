@@ -11,11 +11,6 @@ public class Util {
     private static final HashMap<Integer, String> ID_MAP = new HashMap<>();
     private static final HashMap<String, Integer> NAME_MAP = new HashMap<>();
 
-    public static void main(String[] args) throws IOException, URISyntaxException {
-        genMaps();
-//        System.out.println(NAME_MAP.get("Blastoise".toLowerCase()));
-    }
-
     static {
         try {
             Scanner mapIn = new Scanner(new FileInputStream(new File(Objects.requireNonNull(ClassLoader.getSystemClassLoader().getResource("map.txt")).toURI())));
