@@ -8,8 +8,8 @@ import java.net.URISyntaxException;
 import java.util.*;
 
 public class Util {
-    private static final HashMap<Integer, String> ID_MAP = new HashMap<>();
-    private static final HashMap<String, Integer> NAME_MAP = new HashMap<>();
+    public static final HashMap<Integer, String> ID_MAP = new HashMap<>();
+    public static final HashMap<String, Integer> NAME_MAP = new HashMap<>();
 
     static {
         try {
