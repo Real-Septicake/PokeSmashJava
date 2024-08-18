@@ -52,8 +52,6 @@ public class Util {
         final int count = 10;
         boolean finished = false;
 
-//        HashMap<Integer, String> map = new HashMap<>();
-
         PokeApi pokeApi = new PokeApiClient();
         OutputStreamWriter mapOut = new OutputStreamWriter(new FileOutputStream(new File(Objects.requireNonNull(ClassLoader.getSystemClassLoader().getResource("map.txt")).toURI())));
         while(!finished) {
@@ -69,11 +67,6 @@ public class Util {
                 mapOut.append(resource.getName()).append('\n');
             }
         }
-
-//        System.out.println(map.size());
-//        for(Integer key : map.keySet()){
-//            mapOut.append(String.valueOf(key)).append(" ").append(map.get(key)).append('\n');
-//        }
         mapOut.close();
     }
 }
