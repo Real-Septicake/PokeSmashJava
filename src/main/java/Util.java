@@ -7,7 +7,7 @@ import java.io.*;
 import java.net.URISyntaxException;
 import java.util.*;
 
-public class Util {
+public final class Util {
     public static final HashMap<Integer, String> ID_MAP = new HashMap<>();
     public static final HashMap<String, Integer> NAME_MAP = new HashMap<>();
 
