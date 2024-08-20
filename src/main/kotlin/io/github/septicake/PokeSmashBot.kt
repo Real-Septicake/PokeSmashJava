@@ -60,6 +60,8 @@ class PokeSmashBot(builder: JDABuilder) {
     lateinit var db: Database
     private lateinit var hikari: HikariDataSource
 
+    var shutdown: Boolean = false
+
     suspend fun start() {
         logger.info { "Starting PokeSmashOrPass bot" }
 
@@ -101,6 +103,7 @@ class PokeSmashBot(builder: JDABuilder) {
     }
 
     suspend fun shutdown() {
+        shutdown = true
         logger.info { "Shutting down PokeSmashOrPass bot" }
         hikari.close()
         logger.info { "Shutdown successfully" }
