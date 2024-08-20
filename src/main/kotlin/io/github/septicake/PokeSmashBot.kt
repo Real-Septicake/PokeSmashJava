@@ -71,7 +71,7 @@ class PokeSmashBot(builder: JDABuilder) {
             .scan().use { results ->
                 val commandContainers = results.allClasses.map { classInfo ->
                     val clazz = classInfo.loadClass().kotlin
-                    clazz.constructors.single().call()
+                    clazz.constructors.single().call(this)
                 }
                 annotationParser.parse(commandContainers)
             }
