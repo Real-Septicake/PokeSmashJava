@@ -60,7 +60,6 @@ class PokeSmashBot(builder: JDABuilder) {
     lateinit var db: Database
     private lateinit var hikari: HikariDataSource
 
-    @Suppress("UNREACHABLE_CODE")
     suspend fun start() {
         logger.info { "Starting PokeSmashOrPass bot" }
 
@@ -108,8 +107,8 @@ class PokeSmashBot(builder: JDABuilder) {
 
         jda.shutdown()
         if (!jda.awaitShutdown(10.seconds.toJavaDuration())) {
-            jda.shutdownNow();
-            jda.awaitShutdown();
+            jda.shutdownNow()
+            jda.awaitShutdown()
         }
     }
 

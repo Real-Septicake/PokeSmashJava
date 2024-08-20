@@ -54,7 +54,6 @@ kotlinx-uuid-exposed = { group = "app.softwork", name = "kotlinx-uuid-exposed", 
 ## The easiest HTTP networking library for Kotlin/Android
 fuel-core = { group = "com.github.kittinunf.fuel", name = "fuel", version.ref = "fuel" }
 fuel-coroutines = { group = "com.github.kittinunf.fuel", name = "fuel-coroutines", version.ref = "fuel" }
-fuel-jackson = { group = "com.github.kittinunf.fuel", name = "fuel-jackson", version.ref = "fuel" }
 fuel-kotlinx-serialization = { group = "com.github.kittinunf.fuel", name = "fuel-kotlinx-serialization", version.ref = "fuel" }
 
 # SLF4J
@@ -123,7 +122,11 @@ cloud = [
     "cloud-jda",
 ]
 
-fuel = ["fuel-core", "fuel-coroutines", "fuel-jackson", "fuel-kotlinx-serialization"]
+fuel = [
+    "fuel-core",
+    "fuel-coroutines",
+    "fuel-kotlinx-serialization",
+]
 
 exposed = [
     "exposed-core",

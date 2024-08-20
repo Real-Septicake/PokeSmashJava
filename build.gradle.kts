@@ -1,5 +1,4 @@
 import ca.solostudios.nyx.util.soloStudios
-import org.gradle.kotlin.dsl.scmVersion
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -31,6 +30,7 @@ nyx {
 repositories {
     soloStudios()
     mavenCentral()
+    maven("https://jitpack.io")
 }
 
 dependencies {
@@ -68,7 +68,7 @@ dependencies {
 
     // testImplementation(platform("org.junit:junit-bom:5.11.0"))
     // testImplementation("org.junit.jupiter:junit-jupiter")
-    // // implementation("com.github.PokeAPI:pokekotlin:2.3.1")
+    implementation("com.github.PokeAPI:pokekotlin:2.3.1")
     // implementation("mysql:mysql-connector-java:8.0.33")
     // implementation("org.springframework:spring-jdbc:6.1.12")
 }
