@@ -5,11 +5,11 @@ import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 
-object PokemonTable : LongIdTable("MEMBER_DATA") {
-    val smashWins = long("smash_wins")
-    val passWins = long("pass_wins")
-    val smashes = long("smashes")
-    val passes = long("passes")
+object PokemonTable : LongIdTable("pokemoninfo", columnName = "pokeId") {
+    val smashWins = long("smashCount")
+    val passWins = long("passCount")
+    val smashes = long("smashVotes")
+    val passes = long("passVotes")
 }
 
 class PokemonEntity(id: EntityID<Long>) : LongEntity(id) {
