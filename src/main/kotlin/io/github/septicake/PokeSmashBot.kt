@@ -66,7 +66,6 @@ class PokeSmashBot(builder: JDABuilder) {
         logger.info { "Starting PokeSmashOrPass bot" }
 
         ClassGraph()
-            .verbose()
             .enableAllInfo()
             .acceptPackages("io.github.septicake.commands")
             .scan().use { results ->
