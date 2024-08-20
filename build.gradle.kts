@@ -1,25 +1,74 @@
-import java.net.URI
+import ca.solostudios.nyx.util.soloStudios
 
 plugins {
-    id("java")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+
+    alias(libs.plugins.nyx)
+
+    alias(libs.plugins.axion.release)
 }
 
-group = "org.example"
-version = "1.0-SNAPSHOT"
+nyx {
+    compile {
+        sourcesJar = true
+
+        allWarnings = true
+        distributeLicense = true
+        buildDependsOnJar = true
+        jvmTarget = 21
+        reproducibleBuilds = true
+    }
+
+    info {
+        group = "io.github.septicake"
+        version = scmVersion.version
+        repository.fromGithub("Septicake", "PokeSmashJava")
+    }
+}
 
 repositories {
+    soloStudios()
     mavenCentral()
-    maven { url = URI.create("https://jitpack.io") }
+    maven("https://jitpack.io")
 }
 
 dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.11.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    implementation("com.github.PokeAPI:pokekotlin:2.3.1")
-    implementation("mysql:mysql-connector-java:8.0.33")
-    implementation("org.springframework:spring-jdbc:6.1.12")
-}
+    implementation(libs.kotlin.stdlib)
+    implementation(libs.kotlinx.serialization.json)
 
-tasks.test {
-    useJUnitPlatform()
+    implementation(libs.bundles.kotlinx.coroutines.core)
+    testImplementation(libs.bundles.kotlinx.coroutines.debugging)
+
+    implementation(libs.kotlinx.datetime)
+    implementation(libs.kotlinx.uuid)
+
+    implementation(libs.bundles.fuel)
+
+    implementation(libs.slf4j)
+    implementation(libs.slf4k)
+    implementation(libs.logback)
+
+    implementation(libs.guava)
+    implementation(libs.guava.kotlin)
+
+    implementation(libs.classgraph)
+
+    implementation(libs.jda)
+    implementation(libs.jda.ktx)
+
+    implementation(libs.hikaricp)
+    implementation(libs.sqlite)
+    implementation(libs.mariadb)
+
+    implementation(libs.bundles.exposed)
+    implementation(libs.kotlinx.uuid.exposed)
+
+    implementation(libs.bundles.cloud)
+
+    // testImplementation(platform("org.junit:junit-bom:5.11.0"))
+    // testImplementation("org.junit.jupiter:junit-jupiter")
+    implementation("com.github.PokeAPI:pokekotlin:2.3.1")
+    // implementation("mysql:mysql-connector-java:8.0.33")
+    // implementation("org.springframework:spring-jdbc:6.1.12")
 }
