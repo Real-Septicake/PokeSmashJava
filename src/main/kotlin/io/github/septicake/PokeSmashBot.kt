@@ -42,6 +42,10 @@ class PokeSmashBot(builder: JDABuilder) {
 
     val scope = CoroutineScope(SupervisorJob() + coroutineDispatcher)
 
+    val homeServer = getEnv("HOME_SERVER")
+    val testingChannel = getEnv("TESTING_CHANNEL")
+    val replyChannel = getEnv("REPLY_CHANNEL")
+
     val commandManager = JDA5CommandManager(
         ExecutionCoordinator.asyncCoordinator(),
         JDAInteraction.InteractionMapper.identity()
@@ -79,7 +83,7 @@ class PokeSmashBot(builder: JDABuilder) {
         logger.info { "Connecting to bot database" }
 
         val hikariConfig = HikariConfig().apply {
-            jdbcUrl = "jdbc:mysql://" + getEnv("DB_HOST") + ":" + getEnv("DB_PORT") + "/" + getEnv("DB_NAME")
+            jdbcUrl = "jdbc:mariadb://" + getEnv("DB_HOST") + ":" + getEnv("DB_PORT") + "/" + getEnv("DB_NAME")
             driverClassName = "org.mariadb.jdbc.Driver" // TODO: sqlite
             username = getEnv("DB_USER")
             password = getEnv("DB_PASSWORD")
