@@ -21,7 +21,6 @@ object PokeApi {
 
     suspend inline fun <reified T : Any> request(path: String, parameters: Parameters? = null): T {
         return fuel.get(path.replace(fuel.basePath!!, ""), parameters)
-            // .responseObject(kotlinxDeserializerOf<T>())
             .awaitObject(kotlinxDeserializerOf<T>(serializer<T>(), json))
     }
 

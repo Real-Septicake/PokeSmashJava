@@ -4,7 +4,6 @@
     </contextListener>
     <timestamp key="startTimestamp" datePattern="yyyyMMddHHmmssSSS"/>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <withJansi>true</withJansi>
         <encoder>
             <pattern>%d %-24([%.-22(%thread)]) %highlight(%-5level) %-48logger{48} - %highlight(%msg){}%n{}%ex{full,DISPLAY_EX_EVAL}
             </pattern>
