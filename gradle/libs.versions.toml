@@ -1,0 +1,133 @@
+[versions]
+kotlin = "2.0.10"
+kotlinx-serialization = "1.7.1"
+kotlinx-coroutines = "1.8.1"
+kotlinx-uuid = "0.0.26"
+
+nyx = "0.2.3"
+
+axion-release = "1.17.2"
+
+slf4j = "2.0.16"
+slf4k = "0.5.3"
+logback = "1.5.7"
+
+guava = "33.3.0-jre"
+guava-kotlin = "0.1.2"
+
+jda = "5.0.2"
+
+jetbrains-exposed = "0.53.0"
+
+fuel = "2.3.1"
+
+cloud = "2.0.0-rc.2"
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+
+nyx = { id = "ca.solo-studios.nyx", version.ref = "nyx" }
+
+axion-release = { id = "pl.allegro.tech.build.axion-release", version.ref = "axion-release" }
+
+[libraries]
+
+# Kotlin stdlib
+kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlin" }
+
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-serialization-hocon = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-hocon", version.ref = "kotlinx-serialization" }
+
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-jdk8 = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-jdk8", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-slf4j = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-slf4j", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-debug = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-debug", version.ref = "kotlinx-coroutines" }
+
+# Kotlinx Misc. Libraries
+kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version = "0.6.0" }
+kotlinx-uuid = { group = "app.softwork", name = "kotlinx-uuid-core", version.ref = "kotlinx-uuid" }
+kotlinx-uuid-exposed = { group = "app.softwork", name = "kotlinx-uuid-exposed", version.ref = "kotlinx-uuid" }
+
+# Fuel
+## The easiest HTTP networking library for Kotlin/Android
+fuel-core = { group = "com.github.kittinunf.fuel", name = "fuel", version.ref = "fuel" }
+fuel-coroutines = { group = "com.github.kittinunf.fuel", name = "fuel-coroutines", version.ref = "fuel" }
+fuel-jackson = { group = "com.github.kittinunf.fuel", name = "fuel-jackson", version.ref = "fuel" }
+fuel-kotlinx-serialization = { group = "com.github.kittinunf.fuel", name = "fuel-kotlinx-serialization", version.ref = "fuel" }
+
+# SLF4J
+## Simple Logging Facade for Java
+slf4j = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
+# SLF4K
+## SLF4K is a set of kotlin extensions for SLF4J
+slf4k = { group = "ca.solo-studios", name = "slf4k", version.ref = "slf4k" }
+# Logback
+## The reliable, generic, fast and flexible logging framework for Java
+logback = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback" }
+
+# Guava
+## A set of core Java libraries from Google that includes new collection types, immutable collections, a graph library,
+##      and utilities for concurrency, I/O, hashing, caching, primitives, strings, and more
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
+# Guava Kotlin
+## A wrapper around Guava to make it more idiomatic in kotlin
+guava-kotlin = { group = "ca.solo-studios", name = "guava-kotlin", version.ref = "guava-kotlin" }
+
+classgraph = {group = "io.github.classgraph", name = "classgraph", version = "4.8.174"}
+
+jda = { group = "net.dv8tion", name = "JDA", version.ref = "jda" }
+jda-ktx = {group = "club.minnced", name = "jda-ktx", version = "0.12.0"}
+
+# HikariCP
+## A lightweight and "zero-overhead" production ready JDBC connection pool
+hikaricp = { group = "com.zaxxer", name = "HikariCP", version = "5.1.0" }
+
+# SQLite
+## SQLite JDBC Driver
+sqlite = { group = "org.xerial", name = "sqlite-jdbc", version = "3.46.1.0" }
+
+mariadb = {group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "3.4.1"}
+
+# Exposed
+## An ORM framework for Kotlin
+exposed-core = { group = "org.jetbrains.exposed", name = "exposed-core", version.ref = "jetbrains-exposed" }
+exposed-dao = { group = "org.jetbrains.exposed", name = "exposed-dao", version.ref = "jetbrains-exposed" }
+exposed-jdbc = { group = "org.jetbrains.exposed", name = "exposed-jdbc", version.ref = "jetbrains-exposed" }
+exposed-kotlin-time = { group = "org.jetbrains.exposed", name = "exposed-kotlin-datetime", version.ref = "jetbrains-exposed" }
+
+# Cloud
+## Cloud is a general-purpose Java command dispatcher & framework
+cloud-core = { group = "org.incendo", name = "cloud-core", version.ref = "cloud" }
+cloud-annotations = { group = "org.incendo", name = "cloud-annotations", version.ref = "cloud" }
+cloud-kotlin-extensions = { group = "org.incendo", name = "cloud-kotlin-extensions", version.ref = "cloud" }
+cloud-kotlin-coroutines = { group = "org.incendo", name = "cloud-kotlin-coroutines", version.ref = "cloud" }
+cloud-kotlin-coroutines-annotations = { group = "org.incendo", name = "cloud-kotlin-coroutines-annotations", version.ref = "cloud" }
+cloud-services = { group = "org.incendo", name = "cloud-services", version.ref = "cloud" }
+#cloud-tasks = { group = "org.incendo", name = "cloud-tasks", version.ref = "cloud" }
+cloud-jda = { group = "org.incendo", name = "cloud-jda5", version = "1.0.0-beta.3" }
+
+[bundles]
+kotlinx-coroutines-core = ["kotlinx-coroutines-core", "kotlinx-coroutines-jdk8", "kotlinx-coroutines-slf4j"]
+kotlinx-coroutines-debugging = ["kotlinx-coroutines-test", "kotlinx-coroutines-debug"]
+
+cloud = [
+    "cloud-core",
+    "cloud-annotations",
+    "cloud-kotlin-extensions",
+    "cloud-kotlin-coroutines",
+    "cloud-kotlin-coroutines-annotations",
+    "cloud-services",
+#    "cloud-tasks",
+    "cloud-jda",
+]
+
+fuel = ["fuel-core", "fuel-coroutines", "fuel-jackson", "fuel-kotlinx-serialization"]
+
+exposed = [
+    "exposed-core",
+    "exposed-dao",
+    "exposed-jdbc",
+    "exposed-kotlin-time",
+]
