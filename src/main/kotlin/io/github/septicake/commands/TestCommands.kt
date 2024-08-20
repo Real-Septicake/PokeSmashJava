@@ -13,6 +13,7 @@ class TestCommands {
     @Command("test thing <number> [string]")
     fun testCommand(
         interaction: JDAInteraction,
+        @Argument("number")
         number: Int,
         @Argument("string")
         @Default("string!")

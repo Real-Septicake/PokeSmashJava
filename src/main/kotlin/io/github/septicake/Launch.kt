@@ -3,6 +3,8 @@ package io.github.septicake
 import dev.minn.jda.ktx.jdabuilder.injectKTX
 import dev.minn.jda.ktx.jdabuilder.intents
 import io.github.septicake.util.getEnv
+import io.github.septicake.util.onJvmShutdown
+import io.github.septicake.util.removeJvmShutdownThread
 import kotlinx.coroutines.runBlocking
 import net.dv8tion.jda.api.GatewayEncoding
 import net.dv8tion.jda.api.JDABuilder
@@ -14,6 +16,8 @@ import org.slf4j.kotlin.toplevel.getLogger
 
 private val logger by getLogger()
 
+private lateinit var shutdownThread: Thread
+
 fun main() {
     try {
         val token = getEnv("DISCORD_TOKEN")
@@ -23,7 +27,7 @@ fun main() {
 
             intents += listOf(
                 GatewayIntent.GUILD_MESSAGES,
-                GatewayIntent.MESSAGE_CONTENT,
+                // GatewayIntent.MESSAGE_CONTENT,
                 GatewayIntent.GUILD_MESSAGE_POLLS,
             )
 
@@ -37,6 +41,17 @@ fun main() {
         val bot = PokeSmashBot(jdaBuilder)
         runBlocking {
             bot.start()
+        }
+
+        shutdownThread = onJvmShutdown("PolyBot-Shutdown") {
+            if (bot.shutdown)
+                return@onJvmShutdown
+
+            runBlocking {
+                bot.shutdown()
+            }
+
+            removeJvmShutdownThread(shutdownThread)
         }
     } catch (e: Throwable) {
         logger.error(e) { "Exception occurred while running PokeSmashOrPass bot" }
