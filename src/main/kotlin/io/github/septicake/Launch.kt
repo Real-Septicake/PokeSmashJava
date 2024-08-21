@@ -36,14 +36,13 @@ fun main() {
             setGatewayEncoding(GatewayEncoding.ETF)
 
             setEnableShutdownHook(true)
-
         }
         val bot = PokeSmashBot(jdaBuilder)
         runBlocking {
             bot.start()
         }
 
-        shutdownThread = onJvmShutdown("PolyBot-Shutdown") {
+        shutdownThread = onJvmShutdown("PokeSmashBot-Shutdown") {
             if (bot.shutdown)
                 return@onJvmShutdown
 
