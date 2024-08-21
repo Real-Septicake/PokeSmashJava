@@ -6,6 +6,7 @@ import io.github.classgraph.ClassGraph
 import io.github.septicake.db.GuildTable
 import io.github.septicake.db.PokemonTable
 import io.github.septicake.db.PollTable
+import io.github.septicake.db.WhitelistTable
 import io.github.septicake.util.ScheduledThreadPool
 import io.github.septicake.util.currentThread
 import io.github.septicake.util.getEnv
@@ -22,9 +23,7 @@ import org.incendo.cloud.discord.jda5.annotation.ReplySettingBuilderModifier
 import org.incendo.cloud.discord.slash.annotation.CommandScopeBuilderModifier
 import org.incendo.cloud.execution.ExecutionCoordinator
 import org.incendo.cloud.kotlin.coroutines.annotations.installCoroutineSupport
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.DatabaseConfig
-import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.getLogger
 import org.slf4j.kotlin.info
@@ -45,6 +44,14 @@ class PokeSmashBot(builder: JDABuilder) {
     val homeServer = getEnv("HOME_SERVER")
     val testingChannel = getEnv("TESTING_CHANNEL")
     val replyChannel = getEnv("REPLY_CHANNEL")
+
+    val notWhitelistedResponse = "\\*racks shotgun* Do not the bot."
+
+    val whitelist = longArrayOf(
+        687780591818899515,
+        734183824950427690,
+        400477735811809284
+    )
 
     val commandManager = JDA5CommandManager(
         ExecutionCoordinator.asyncCoordinator(),
@@ -116,6 +123,15 @@ class PokeSmashBot(builder: JDABuilder) {
             jda.shutdownNow()
             jda.awaitShutdown()
         }
+    }
+
+    fun userWhitelisted(guild: Long, user: Long): Boolean {
+        val exists = transaction(db) {
+            WhitelistTable.selectAll()
+                .where { WhitelistTable.guild eq guild and (WhitelistTable.user eq user) }
+                .count()
+        }
+        return if (exists == 1L) true else whitelist.contains(user)
     }
 
     object PokeSmashThreadFactory : ThreadFactory {
