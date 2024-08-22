@@ -25,24 +25,26 @@ class DevCommands(
     ) {
         val event = interaction.interactionEvent() ?: return
         if(event.channel!!.id != bot.testingChannel) {
-            event.reply("Command cannot be used in this channel").queue()
+            event.reply("Command cannot be used in this channel.").queue()
         } else {
             val info = transaction(bot.db) {
                 GuildEntity.findById(server)
             }
             if(info == null) {
-                event.reply("Server `$server` either does not exist or has not been populated").queue()
+                event.reply("Server `$server` either does not exist or has not been populated.").queue()
             } else {
                 if(info.channel != null){
-                    val channel = bot.jda.guildCache.getElementById(event.guild!!.idLong)?.textChannelCache?.getElementById(info.channel!!)
+                    val channel = bot.jda.getTextChannelById(info.channel!!)
                     if(channel == null) {
-                        event.reply("Server's channel does not exist").queue()
+                        event.reply("Server's channel does not exist.").queue()
                         return
                     } else {
                         event.deferReply().queue()
                         channel.sendMessage(str).queue()
                         event.hook.sendMessage("Message sent.").queue()
                     }
+                } else {
+                    event.reply("Server has not set a channel yet.")
                 }
             }
         }
