@@ -25,7 +25,7 @@ class UserPermissionPostprocessor<C>(
             }
         } else if(commandMeta.getOrDefault(PokeMeta.GUILD_OWNER_ONLY, false)) {
             val guild = context.get<Guild>("Guild")
-            if(interaction.user.idLong != guild.ownerIdLong) {
+            if(interaction.user.idLong != guild.ownerIdLong && interaction.user.idLong != bot.ownerId) {
                 interaction.reply("Command can only be used by server owner.").queue()
                 ConsumerService.interrupt()
             }
