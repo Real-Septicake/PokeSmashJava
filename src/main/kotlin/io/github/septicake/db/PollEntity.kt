@@ -24,11 +24,7 @@ object PollTable : CompositeIdTable("votes") {
             }
         }
     }, toDb = {
-        res: PollResult -> when(res) {
-            PollResult.PASSED -> 0
-            PollResult.SMASHED -> 1
-            PollResult.ERROR -> -1
-        }
+        res: PollResult -> res.value
     }).index()
 }
 
