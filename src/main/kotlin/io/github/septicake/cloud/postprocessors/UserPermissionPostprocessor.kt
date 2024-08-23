@@ -23,6 +23,12 @@ class UserPermissionPostprocessor<C>(
                 interaction.reply("\\*racks shotgun* Do not the bot.").queue()
                 ConsumerService.interrupt()
             }
+        } else if(commandMeta.getOrDefault(PokeMeta.GUILD_OWNER_ONLY, false)) {
+            val guild = context.get<Guild>("Guild")
+            if(interaction.user.idLong != guild.ownerIdLong) {
+                interaction.reply("Command can only be used by server owner.").queue()
+                ConsumerService.interrupt()
+            }
         } else if(commandMeta.getOrDefault(PokeMeta.BOT_OWNER_ONLY, false)) {
             if(bot.ownerId != interaction.user.idLong) {
                 interaction.reply("Only the bot owner can use this command.").queue()
