@@ -1,5 +1,7 @@
 package io.github.septicake
 
+import com.google.common.collect.BiMap
+import com.google.common.collect.HashBiMap
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.github.classgraph.ClassGraph
@@ -29,6 +31,8 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.getLogger
 import org.slf4j.kotlin.info
 import java.util.concurrent.ThreadFactory
+import kotlin.io.path.Path
+import kotlin.io.path.bufferedReader
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
@@ -52,10 +56,11 @@ class PokeSmashBot(builder: JDABuilder) {
         400477735811809284
     )
 
-    val commandManager = JDA5CommandManager(
-        ExecutionCoordinator.asyncCoordinator(),
-        JDAInteraction.InteractionMapper.identity()
-    )
+    val map: BiMap<Int, String> = HashBiMap.create(1000)
+
+    val ownerId = 687780591818899515
+
+    val commandManager = PokeCloudCommandManager(this)
 
     val annotationParser = AnnotationParser(commandManager, JDAInteraction::class.java).apply {
         installCoroutineSupport()
@@ -79,6 +84,8 @@ class PokeSmashBot(builder: JDABuilder) {
     suspend fun start() {
         logger.info { "Starting PokeSmashOrPass bot" }
 
+        loadMap()
+
         ClassGraph()
             .enableAllInfo()
             .acceptPackages("io.github.septicake.commands")
@@ -93,7 +100,7 @@ class PokeSmashBot(builder: JDABuilder) {
         logger.info { "Connecting to bot database" }
 
         val hikariConfig = HikariConfig().apply {
-            jdbcUrl = "jdbc:mariadb://" + getEnv("DB_HOST") + ":" + getEnv("DB_PORT") + "/" + getEnv("DB_NAME")
+            jdbcUrl = "jdbc:mariadb://" + getEnv("DB_HOST") + ":" + getEnv("DB_PORT") + "/" + getEnv("DB_NAME") + "?allowPublicKeyRetrieval=true"
             driverClassName = "org.mariadb.jdbc.Driver" // TODO: sqlite
             username = getEnv("DB_USER")
             password = getEnv("DB_PASSWORD")
@@ -113,6 +120,8 @@ class PokeSmashBot(builder: JDABuilder) {
 
         commandManager.registerGlobalCommands(jda)
         jda.awaitReady()
+
+        logger.info { "Bot successfully started" }
     }
 
     suspend fun shutdown() {
@@ -128,8 +137,33 @@ class PokeSmashBot(builder: JDABuilder) {
         }
     }
 
-    fun userWhitelisted(guild: Long, user: Long): Boolean {
-        val exists = transaction(db) {
+    fun loadMap() {
+        logger.info { "Loading pokemon map" }
+
+        val pokemonMap = Path("src/main/resources/pokemon_map.txt")
+
+        pokemonMap.bufferedReader().useLines { lines ->
+            lines.withIndex().forEach {
+                map[it.index] = it.value
+            }
+        }
+
+        logger.info { "Pokemon map loaded" }
+    }
+
+    fun userWhitelisted(guild: Guild, user: Long): Boolean {
+        if(user == ownerId)
+            return true
+        if(user in whitelist)
+            return true
+        if(guild.ownerIdLong == user)
+            return true
+
+        return userServerWhitelisted(guild.idLong, user)
+    }
+
+    fun userServerWhitelisted(guild: Long, user: Long): Boolean {
+        return transaction(db) {
             WhitelistTable.selectAll()
                 .where { WhitelistTable.guild eq guild and (WhitelistTable.user eq user) }
                 .count()
