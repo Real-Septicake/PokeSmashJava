@@ -1,19 +1,17 @@
 package io.github.septicake.db
 
-import org.jetbrains.exposed.dao.CompositeEntity
-import org.jetbrains.exposed.dao.CompositeEntityClass
-import org.jetbrains.exposed.dao.id.CompositeID
-import org.jetbrains.exposed.dao.id.CompositeIdTable
+import org.jetbrains.exposed.dao.*
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.dao.id.IntIdTable
 
-object WhitelistTable : CompositeIdTable("whitelist") {
+object WhitelistTable : IntIdTable("whitelist") {
     val user = long("userId").index()
     val guild = long("guildId").index()
 }
 
-class WhitelistEntity(id: EntityID<CompositeID>) : CompositeEntity(id) {
+class WhitelistEntity(id: EntityID<Int>) : IntEntity(id) {
     var user: Long by WhitelistTable.user
     var guild: Long by WhitelistTable.guild
 
-    companion object : CompositeEntityClass<WhitelistEntity>(WhitelistTable)
+    companion object : IntEntityClass<WhitelistEntity>(WhitelistTable)
 }

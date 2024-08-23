@@ -1,15 +1,14 @@
 package io.github.septicake.db
 
-import org.jetbrains.exposed.dao.CompositeEntity
-import org.jetbrains.exposed.dao.CompositeEntityClass
-import org.jetbrains.exposed.dao.id.CompositeID
-import org.jetbrains.exposed.dao.id.CompositeIdTable
+import org.jetbrains.exposed.dao.IntEntity
+import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.dao.id.IntIdTable
 import org.slf4j.kotlin.getLogger
 
 val logger by getLogger()
 
-object PollTable : CompositeIdTable("votes") {
+object PollTable : IntIdTable("votes") {
     val guild = long("guildId").index()
     val pokemon = long("pokeId").index()
     val smashes = long("smashes")
@@ -28,14 +27,14 @@ object PollTable : CompositeIdTable("votes") {
     }).index()
 }
 
-class PollEntity(id: EntityID<CompositeID>) : CompositeEntity(id) {
+class PollEntity(id: EntityID<Int>) : IntEntity(id) {
     val guild: Long by PollTable.guild
     val pokemon: Long by PollTable.pokemon
     var smashes: Long by PollTable.smashes
     var passes: Long by PollTable.passes
     val result: PollResult by PollTable.result
 
-    companion object : CompositeEntityClass<PollEntity>(PollTable)
+    companion object : IntEntityClass<PollEntity>(PollTable)
 }
 
 enum class PollResult(val value: Int) {
