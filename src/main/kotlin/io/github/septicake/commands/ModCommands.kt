@@ -9,6 +9,8 @@ import io.github.septicake.db.WhitelistTable
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.Channel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
+import org.incendo.cloud.annotation.specifier.Greedy
+import org.incendo.cloud.annotation.specifier.Range
 import org.incendo.cloud.annotations.Argument
 import org.incendo.cloud.annotations.Command
 import org.incendo.cloud.discord.jda5.JDAInteraction
@@ -39,7 +41,7 @@ class ModCommands(
                 this.user = user.idLong
             }
         }
-        event.hook.sendMessage("<@${user.id}> successfully added to whitelist.").mention().queue()
+        event.hook.sendMessage("<@${user.id}> successfully added to whitelist.").queue()
     }
 
     @GuildOnly
@@ -61,7 +63,7 @@ class ModCommands(
                 WhitelistTable.guild eq event.guild!!.idLong and (WhitelistTable.user eq user.idLong)
             }.elementAt(0).delete()
         }
-        event.hook.sendMessage("<@${user.id}> successfully removed from whitelist.").mention().queue()
+        event.hook.sendMessage("<@${user.id}> successfully removed from whitelist.").queue()
     }
 
     @GuildOnly
@@ -91,5 +93,58 @@ class ModCommands(
         } else {
             event.hook.sendMessage("Channel must be a message channel").queue()
         }
+    }
+
+    @GuildOnly
+    @UserPermissions(guildOwnerOnly = true)
+    @Command("populate <channel> [polls]")
+    fun populateCommand(
+        interaction: JDAInteraction,
+        @Argument("channel", description = "Channel for `next` to be called in, and where announcements will be sent to")
+        channel: Channel,
+        @Argument("polls", description = "Number of polls per call of `next`, defaults to 5")
+        @Range(min = "1", max = "10")
+        polls: Int = 5
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+        val info = transaction(bot.db) {
+            GuildEntity.findById(interaction.guild()!!.idLong)
+        }
+
+        if(info != null) {
+            event.hook.sendMessage("Server has already been populated").queue()
+        } else {
+            if(channel !is MessageChannel) {
+                event.hook.sendMessage("Channel must be a message channel").queue()
+                return
+            }
+            transaction(bot.db) {
+                GuildEntity.new {
+                    this.id._value = event.guild!!.idLong
+                    this.name = event.guild!!.name
+                    this.channel = channel.idLong
+                    this.polls = polls
+                }
+            }
+            event.hook.sendMessage("Server populated successfully.").queue()
+        }
+    }
+
+    @GuildOnly
+    @UserPermissions(whitelistOnly = true)
+    @Command("reply <msg>")
+    fun replyCommand(
+        interaction: JDAInteraction,
+        @Argument("msg")
+        @Greedy
+        msg: String
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+        bot.jda.getTextChannelById(bot.replyChannel!!.toLong())!!.sendMessage(
+            "User `${event.user.name}` from server `${event.guild!!.name}` sent: $msg"
+        ).queue()
+        event.hook.sendMessage("Message sent.").queue()
     }
 }
