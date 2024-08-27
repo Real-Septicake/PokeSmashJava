@@ -6,19 +6,16 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.github.classgraph.ClassGraph
 import io.github.septicake.cloud.PokeMeta
-import io.github.septicake.cloud.annotations.ChannelRestriction
-import io.github.septicake.cloud.annotations.GuildOnly
-import io.github.septicake.cloud.annotations.UserPermissions
+import io.github.septicake.cloud.annotations.*
 import io.github.septicake.cloud.manager.PokeCloudCommandManager
-import io.github.septicake.db.*
-import io.github.septicake.util.ScheduledThreadPool
-import io.github.septicake.util.currentThread
-import io.github.septicake.util.getEnv
-import io.github.septicake.util.processors
-import io.github.septicake.util.runtime
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.asCoroutineDispatcher
+import io.github.septicake.cloud.manager.PokemonComponentPreprocessor
+import io.github.septicake.cloud.manager.RequireOptionComponentPreprocessor
+import io.github.septicake.db.GuildTable
+import io.github.septicake.db.PokemonTable
+import io.github.septicake.db.PollTable
+import io.github.septicake.db.WhitelistTable
+import io.github.septicake.util.*
+import kotlinx.coroutines.*
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.Guild
 import org.incendo.cloud.annotations.AnnotationParser
@@ -70,6 +67,13 @@ class PokeSmashBot(builder: JDABuilder) {
         registerBuilderModifier(ChannelRestriction::class.java, PokeMeta::channelRestrictionModifier)
         registerBuilderModifier(UserPermissions::class.java, PokeMeta::userPermissionModifier)
         registerBuilderModifier(GuildOnly::class.java, PokeMeta::guildOnlyModifier)
+
+        registerPreprocessorMapper(RequireOptions::class.java) {
+            annotation -> RequireOptionComponentPreprocessor(annotation.options)
+        }
+        registerPreprocessorMapper(Pokemon::class.java) {
+            _ -> PokemonComponentPreprocessor(this@PokeSmashBot)
+        }
     }
 
     val jda = builder.apply {
@@ -115,7 +119,7 @@ class PokeSmashBot(builder: JDABuilder) {
         db = Database.connect(datasource = hikari, databaseConfig = dbConfig)
 
         transaction(db) {
-            SchemaUtils.create(GuildTable, PokemonTable, PollTable)
+            SchemaUtils.create(GuildTable, PokemonTable, PollTable, WhitelistTable)
         }
 
         commandManager.registerGlobalCommands(jda)
@@ -137,7 +141,7 @@ class PokeSmashBot(builder: JDABuilder) {
         }
     }
 
-    fun loadMap() {
+    private fun loadMap() {
         logger.info { "Loading pokemon map" }
 
         val pokemonMap = Path("src/main/resources/pokemon_map.txt")
@@ -163,11 +167,11 @@ class PokeSmashBot(builder: JDABuilder) {
     }
 
     fun userServerWhitelisted(guild: Long, user: Long): Boolean {
-        return transaction(db) {
+        return !transaction(db) {
             WhitelistTable.selectAll()
                 .where { WhitelistTable.guild eq guild and (WhitelistTable.user eq user) }
-                .count()
-        } != 0L
+                .empty()
+        }
     }
 
     object PokeSmashThreadFactory : ThreadFactory {
