@@ -88,23 +88,27 @@ class DevCommands(
         event.hook.sendMessage("Announcement sent to $sent server${if(sent > 0) "s" else ""}. $noChannel server${if(noChannel > 0) "s" else ""} did not have a channel.").queue()
     }
 
-    @Command("shutdown")
+    @Command("shutdown [test]")
     @UserPermissions(botOwnerOnly = true)
     suspend fun shutdownCommand(
-        interaction: JDAInteraction
+        interaction: JDAInteraction,
+        @Argument("test", description = "The shutdown is for a test and does not announce the shutdown to servers")
+        test: Boolean = false
     ) {
         val event = interaction.interactionEvent() ?: return
         event.reply("Shutting down...").queue()
-        transaction(bot.db) {
-            GuildTable.select(GuildTable.channel, GuildTable.id).forEach {
-                if(it[GuildTable.channel] == bot.testingChannel!!.toLong())
-                    return@forEach
+        if(!test){
+            transaction(bot.db) {
+                GuildTable.select(GuildTable.channel, GuildTable.id).forEach {
+                    if (it[GuildTable.channel] == bot.testingChannel!!.toLong())
+                        return@forEach
 
-                if(it[GuildTable.channel] == null) {
-                    return@forEach
+                    if (it[GuildTable.channel] == null) {
+                        return@forEach
+                    }
+
+                    bot.jda.getTextChannelById(it[GuildTable.channel]!!)!!.sendMessage("Bot shutting down...").queue()
                 }
-
-                bot.jda.getTextChannelById(it[GuildTable.channel]!!)!!.sendMessage("Bot shutting down...").queue()
             }
         }
         bot.shutdown()
