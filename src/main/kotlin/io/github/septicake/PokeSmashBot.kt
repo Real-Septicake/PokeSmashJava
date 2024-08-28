@@ -103,14 +103,14 @@ class PokeSmashBot(builder: JDABuilder) {
             val sqlite = getEnv("SQLITE_ENABLED")
             if (sqlite != null) {
                 jdbcUrl = "jdbc:sqlite:./test.sqlite"
-                driverClassName = "org.sqlite.JDBC" // TODO: sqlite
+                driverClassName = "org.sqlite.JDBC"
             } else {
                 val dbHost = getEnv("DB_HOST")
                 val dbPort = getEnv("DB_PORT")
                 val dbName = getEnv("DB_NAME")
 
                 jdbcUrl = "jdbc:mariadb://$dbHost:$dbPort/$dbName?allowPublicKeyRetrieval=true"
-                driverClassName = "org.mariadb.jdbc.Driver" // TODO: sqlite
+                driverClassName = "org.mariadb.jdbc.Driver"
                 username = getEnv("DB_USER")
                 password = getEnv("DB_PASSWORD")
             }
