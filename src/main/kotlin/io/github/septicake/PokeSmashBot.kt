@@ -112,14 +112,20 @@ class PokeSmashBot(builder: JDABuilder) {
         logger.info { "Connecting to bot database" }
 
         val hikariConfig = HikariConfig().apply {
-            val dbHost = getEnv("DB_HOST")
-            val dbPort = getEnv("DB_PORT")
-            val dbName = getEnv("DB_NAME")
+            val sqlite = getEnv("SQLITE_ENABLED")
+            if (sqlite != null) {
+                jdbcUrl = "jdbc:sqlite:./test.sqlite"
+                driverClassName = "org.sqlite.JDBC" // TODO: sqlite
+            } else {
+                val dbHost = getEnv("DB_HOST")
+                val dbPort = getEnv("DB_PORT")
+                val dbName = getEnv("DB_NAME")
 
-            jdbcUrl = "jdbc:mariadb://$dbHost:$dbPort/$dbName?allowPublicKeyRetrieval=true"
-            driverClassName = "org.mariadb.jdbc.Driver" // TODO: sqlite
-            username = getEnv("DB_USER")
-            password = getEnv("DB_PASSWORD")
+                jdbcUrl = "jdbc:mariadb://$dbHost:$dbPort/$dbName?allowPublicKeyRetrieval=true"
+                driverClassName = "org.mariadb.jdbc.Driver" // TODO: sqlite
+                username = getEnv("DB_USER")
+                password = getEnv("DB_PASSWORD")
+            }
         }
 
         hikari = HikariDataSource(hikariConfig)
