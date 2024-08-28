@@ -1,6 +1,7 @@
 package io.github.septicake.cloud.postprocessors
 
 import io.github.septicake.PokeSmashBot
+import io.github.septicake.PokeSmashConstants
 import io.github.septicake.cloud.PokeMeta
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
@@ -25,12 +26,12 @@ class UserPermissionPostprocessor<C>(
             }
         } else if(commandMeta.getOrDefault(PokeMeta.GUILD_OWNER_ONLY, false)) {
             val guild = context.get<Guild>("Guild")
-            if(interaction.user.idLong != guild.ownerIdLong && interaction.user.idLong != bot.ownerId) {
+            if(interaction.user.idLong != guild.ownerIdLong && interaction.user.idLong != PokeSmashConstants.ownerId) {
                 interaction.reply("Command can only be used by server owner.").queue()
                 ConsumerService.interrupt()
             }
         } else if(commandMeta.getOrDefault(PokeMeta.BOT_OWNER_ONLY, false)) {
-            if(bot.ownerId != interaction.user.idLong) {
+            if(PokeSmashConstants.ownerId != interaction.user.idLong) {
                 interaction.reply("Only the bot owner can use this command.").queue()
                 ConsumerService.interrupt()
             }
