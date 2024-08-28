@@ -6,7 +6,11 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.github.classgraph.ClassGraph
 import io.github.septicake.cloud.PokeMeta
-import io.github.septicake.cloud.annotations.*
+import io.github.septicake.cloud.annotations.ChannelRestriction
+import io.github.septicake.cloud.annotations.GuildOnly
+import io.github.septicake.cloud.annotations.Pokemon
+import io.github.septicake.cloud.annotations.RequireOptions
+import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.cloud.manager.PokeCloudCommandManager
 import io.github.septicake.cloud.manager.PokemonComponentPreprocessor
 import io.github.septicake.cloud.manager.RequireOptionComponentPreprocessor
@@ -14,8 +18,15 @@ import io.github.septicake.db.GuildTable
 import io.github.septicake.db.PokemonTable
 import io.github.septicake.db.PollTable
 import io.github.septicake.db.WhitelistTable
-import io.github.septicake.util.*
-import kotlinx.coroutines.*
+import io.github.septicake.util.ScheduledThreadPool
+import io.github.septicake.util.currentThread
+import io.github.septicake.util.getEnv
+import io.github.septicake.util.processors
+import io.github.septicake.util.runtime
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.Guild
 import org.incendo.cloud.annotations.AnnotationParser
@@ -23,11 +34,16 @@ import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.incendo.cloud.discord.jda5.annotation.ReplySettingBuilderModifier
 import org.incendo.cloud.discord.slash.annotation.CommandScopeBuilderModifier
 import org.incendo.cloud.kotlin.coroutines.annotations.installCoroutineSupport
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.DatabaseConfig
+import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.getLogger
 import org.slf4j.kotlin.info
 import java.util.concurrent.ThreadFactory
+import kotlin.collections.set
 import kotlin.io.path.Path
 import kotlin.io.path.bufferedReader
 import kotlin.time.Duration.Companion.seconds
@@ -47,15 +63,7 @@ class PokeSmashBot(builder: JDABuilder) {
     val testingChannel = getEnv("TESTING_CHANNEL")
     val replyChannel = getEnv("REPLY_CHANNEL")
 
-    private val whitelist = longArrayOf(
-        687780591818899515,
-        734183824950427690,
-        400477735811809284
-    )
-
     val map: BiMap<Int, String> = HashBiMap.create(1000)
-
-    val ownerId = 687780591818899515
 
     val commandManager = PokeCloudCommandManager(this)
 
@@ -68,11 +76,11 @@ class PokeSmashBot(builder: JDABuilder) {
         registerBuilderModifier(UserPermissions::class.java, PokeMeta::userPermissionModifier)
         registerBuilderModifier(GuildOnly::class.java, PokeMeta::guildOnlyModifier)
 
-        registerPreprocessorMapper(RequireOptions::class.java) {
-            annotation -> RequireOptionComponentPreprocessor(annotation.options)
+        registerPreprocessorMapper(RequireOptions::class.java) { annotation ->
+            RequireOptionComponentPreprocessor(annotation.options)
         }
-        registerPreprocessorMapper(Pokemon::class.java) {
-            _ -> PokemonComponentPreprocessor(this@PokeSmashBot)
+        registerPreprocessorMapper(Pokemon::class.java) { _ ->
+            PokemonComponentPreprocessor(this@PokeSmashBot)
         }
     }
 
@@ -104,7 +112,11 @@ class PokeSmashBot(builder: JDABuilder) {
         logger.info { "Connecting to bot database" }
 
         val hikariConfig = HikariConfig().apply {
-            jdbcUrl = "jdbc:mariadb://" + getEnv("DB_HOST") + ":" + getEnv("DB_PORT") + "/" + getEnv("DB_NAME") + "?allowPublicKeyRetrieval=true"
+            val dbHost = getEnv("DB_HOST")
+            val dbPort = getEnv("DB_PORT")
+            val dbName = getEnv("DB_NAME")
+
+            jdbcUrl = "jdbc:mariadb://$dbHost:$dbPort/$dbName?allowPublicKeyRetrieval=true"
             driverClassName = "org.mariadb.jdbc.Driver" // TODO: sqlite
             username = getEnv("DB_USER")
             password = getEnv("DB_PASSWORD")
@@ -156,11 +168,11 @@ class PokeSmashBot(builder: JDABuilder) {
     }
 
     fun userWhitelisted(guild: Guild, user: Long): Boolean {
-        if(user == ownerId)
+        if (user == PokeSmashConstants.ownerId)
             return true
-        if(user in whitelist)
+        if (user in PokeSmashConstants.whitelist)
             return true
-        if(guild.ownerIdLong == user)
+        if (guild.ownerIdLong == user)
             return true
 
         return userServerWhitelisted(guild.idLong, user)
