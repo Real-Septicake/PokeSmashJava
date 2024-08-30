@@ -20,11 +20,11 @@ class PokeCommands(
     @Command("smash global totals <info> <format>")
     fun smashGlobalTotalCommand(
         interaction: JDAInteraction,
-        @Argument("info", suggestions = "info",
+        @Argument("info",
             description = "What info should be should be displayed (either \"polls\" or \"votes\")")
         @RequireOptions("polls", "votes")
         info: String,
-        @Argument("format", suggestions = "format",
+        @Argument("format",
             description = "What format the info should be displayed in (either \"count\" or \"percent\")")
         @RequireOptions("count", "percent")
         format: String
@@ -66,11 +66,11 @@ class PokeCommands(
     @GuildOnly
     fun smashServerTotalCommand(
         interaction: JDAInteraction,
-        @Argument("info", suggestions = "info",
+        @Argument("info",
             description = "What info should be should be displayed (either \"polls\" or \"votes\")")
         @RequireOptions("polls", "votes")
         info: String,
-        @Argument("format", suggestions = "format",
+        @Argument("format",
             description = "What format the info should be displayed in (either \"count\" or \"percent\")")
         @RequireOptions("count", "percent")
         format: String
@@ -117,11 +117,11 @@ class PokeCommands(
     @Command("pass global totals <info> <format>")
     fun passGlobalTotalCommand(
         interaction: JDAInteraction,
-        @Argument("info", suggestions = "info",
+        @Argument("info",
             description = "What info should be should be displayed (either \"polls\" or \"votes\")")
         @RequireOptions("polls", "votes")
         info: String,
-        @Argument("format", suggestions = "format",
+        @Argument("format",
             description = "What format the info should be displayed in (either \"count\" or \"percent\")")
         @RequireOptions("count", "percent")
         format: String
@@ -163,11 +163,11 @@ class PokeCommands(
     @GuildOnly
     fun passServerTotalCommand(
         interaction: JDAInteraction,
-        @Argument("info", suggestions = "info",
+        @Argument("info",
             description = "What info should be should be displayed (either \"polls\" or \"votes\")")
         @RequireOptions("polls", "votes")
         info: String,
-        @Argument("format", suggestions = "format",
+        @Argument("format",
             description = "What format the info should be displayed in (either \"count\" or \"percent\")")
         @RequireOptions("count", "percent")
         format: String
