@@ -166,7 +166,7 @@ class PokeSmashBot(builder: JDABuilder) {
 
         pokemonMap.bufferedReader().useLines { lines ->
             lines.withIndex().forEach {
-                map[it.index] = it.value
+                map[it.index + 1] = it.value
             }
         }
 
