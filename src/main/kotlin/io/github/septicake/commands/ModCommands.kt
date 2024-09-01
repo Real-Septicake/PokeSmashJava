@@ -78,7 +78,7 @@ class ModCommands(
         event.deferReply().queue()
         if(channel is MessageChannel) {
             val info = transaction(bot.db) {
-                GuildEntity.findById(interaction.guild()!!.idLong)
+                GuildEntity.findById(event.guild!!.idLong)
             }
             if(info == null) {
                 event.hook.sendMessage("Server has not been populated yet.").queue()
