@@ -4,19 +4,79 @@ import io.github.septicake.PokeSmashBot
 import io.github.septicake.cloud.annotations.GuildOnly
 import io.github.septicake.cloud.annotations.Pokemon
 import io.github.septicake.cloud.annotations.RequireOptions
+import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.PollResult
 import io.github.septicake.db.PollTable
+import io.github.septicake.pokeapi.PokeApi
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
+import net.dv8tion.jda.api.utils.messages.MessagePollData
 import org.incendo.cloud.annotations.Argument
 import org.incendo.cloud.annotations.Command
 import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import kotlin.math.min
 
 class PokeCommands(
     private val bot: PokeSmashBot
 ) {
+
+    @Command("reset")
+    @GuildOnly
+    @UserPermissions(whitelistOnly = true)
+    fun resetCommand(
+        interaction: JDAInteraction
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+        val info = transaction(bot.db) {
+            GuildEntity.findById(event.guild!!.idLong)
+        }
+        if(info == null) {
+            event.hook.sendMessage("Server has not been populated yet.").queue()
+        } else {
+            transaction(bot.db) { info.offset = 0 }
+            event.hook.sendMessage("Reset successful").queue()
+        }
+    }
+
+    @Command("next")
+    @GuildOnly
+    @UserPermissions(whitelistOnly = true)
+    suspend fun nextCommand(
+        interaction: JDAInteraction
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+        val info = transaction(bot.db) {
+            GuildEntity.findById(event.guild!!.idLong)
+        }
+        if(info == null) {
+            event.hook.sendMessage("Server has not been populated yet.").queue()
+        } else {
+            val count = min(bot.map.size - info.offset, info.polls)
+            if(count != 0){
+                PokeApi.pokemonPaged(info.offset, count).results.forEach { pokemon ->
+                    (event.channel as MessageChannel).sendMessage("").setPoll(
+                        MessagePollData.builder(pokemon.name.replaceFirstChar { it.titlecase() })
+                            .addAnswer("Smash")
+                            .addAnswer("Pass")
+                            .build()
+                    ).complete().createThreadChannel(pokemon.name.replaceFirstChar { it.titlecase() }).complete()
+                        .sendMessage(pokemon.fetchInfo().sprites["front_default"].toString().dropLast(1).drop(1))
+                        .queue()
+                }
+                event.hook.sendMessage("Next `$count` pokemon sent").queue()
+                transaction(bot.db) {
+                    info.offset += count
+                }
+            } else {
+                event.hook.sendMessage("Final pokemon reached, run `/reset` to start again").queue()
+            }
+        }
+    }
 
     @Command("smash global totals <info> <format>")
     fun smashGlobalTotalCommand(
