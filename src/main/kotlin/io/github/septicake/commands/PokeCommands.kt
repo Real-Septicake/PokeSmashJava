@@ -4,6 +4,7 @@ import io.github.septicake.PokeSmashBot
 import io.github.septicake.cloud.annotations.GuildOnly
 import io.github.septicake.cloud.annotations.Pokemon
 import io.github.septicake.cloud.annotations.RequireOptions
+import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.PollResult
 import io.github.septicake.db.PollTable
 import org.incendo.cloud.annotations.Argument
@@ -143,20 +144,21 @@ class PokeCommands(
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
         if(info == "polls") {
-            val smashes = transaction(bot.db) {
-                PollTable.selectAll().where {
-                    PollTable.guild eq event.guild!!.idLong and (PollTable.result eq PollResult.SMASHED)
-                }.count()
+            val guildInfo = transaction(bot.db) {
+                GuildEntity.findById(event.guild!!.idLong)
+            }
+            if(guildInfo == null) {
+                event.hook.sendMessage("Server has not been populated yet.")
+                return
+            }
+            if(guildInfo.smashes + guildInfo.passes == 0L) {
+                event.hook.sendMessage("Server has not completed any polls")
+                return
             }
             if(format == "count") {
-                event.hook.sendMessage("Smash has won `$smashes` times").queue()
+                event.hook.sendMessage("Smash has won `${guildInfo.smashes}` times").queue()
             } else {
-                val total = transaction(bot.db) {
-                    PollTable.selectAll().where {
-                        PollTable.guild eq event.guild!!.idLong
-                    }.count()
-                }
-                event.hook.sendMessage("Smash has won `${"%.2f".format((smashes / total) * 100)}`% of the time").queue()
+                event.hook.sendMessage("Smash has won `${"%.2f".format((guildInfo.smashes / (guildInfo.smashes + guildInfo.passes)) * 100)}`% of the time").queue()
             }
         } else {
             val smashes = transaction(bot.db) {
@@ -310,20 +312,21 @@ class PokeCommands(
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
         if(info == "polls") {
-            val passes = transaction(bot.db) {
-                PollTable.selectAll().where {
-                    PollTable.guild eq event.guild!!.idLong and (PollTable.result eq PollResult.PASSED)
-                }.count()
+            val guildInfo = transaction(bot.db) {
+                GuildEntity.findById(event.guild!!.idLong)
+            }
+            if(guildInfo == null) {
+                event.hook.sendMessage("Server has not been populated yet.")
+                return
+            }
+            if(guildInfo.smashes + guildInfo.passes == 0L) {
+                event.hook.sendMessage("Server has not completed any polls")
+                return
             }
             if(format == "count") {
-                event.hook.sendMessage("Pass has won `$passes` times").queue()
+                event.hook.sendMessage("Pass has won `${guildInfo.passes}` times").queue()
             } else {
-                val total = transaction(bot.db) {
-                    PollTable.selectAll().where {
-                        PollTable.guild eq event.guild!!.idLong
-                    }.count()
-                }
-                event.hook.sendMessage("Pass has won `${"%.2f".format((passes / total) * 100)}`% of the time").queue()
+                event.hook.sendMessage("Pass has won `${"%.2f".format((guildInfo.passes / (guildInfo.smashes + guildInfo.passes)) * 100)}`% of the time").queue()
             }
         } else {
             val passes = transaction(bot.db) {
