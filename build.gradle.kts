@@ -66,9 +66,15 @@ dependencies {
 
     implementation(libs.bundles.cloud)
 
-    // testImplementation(platform("org.junit:junit-bom:5.11.0"))
-    // testImplementation("org.junit.jupiter:junit-jupiter")
     implementation("com.github.PokeAPI:pokekotlin:2.3.1")
-    // implementation("mysql:mysql-connector-java:8.0.33")
-    // implementation("org.springframework:spring-jdbc:6.1.12")
+}
+
+tasks.register<JavaExec>("genMap") {
+    mainClass = "io.github.septicake.pokeapi.GenerateMapFileKt"
+    classpath = sourceSets.main.get().runtimeClasspath
+}
+
+tasks.register<JavaExec>("launch") {
+    mainClass = "io.github.septicake.LaunchKt"
+    classpath = sourceSets.main.get().runtimeClasspath
 }
