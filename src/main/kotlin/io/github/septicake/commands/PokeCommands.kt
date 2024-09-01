@@ -152,7 +152,7 @@ class PokeCommands(
                 }.count()
             }
             if (format == "count") {
-                event.hook.sendMessage("`$smashes` server(s) have voted to smash `${bot.map[pokemonId]}`").queue()
+                event.hook.sendMessage("`$smashes` server(s) have voted to smash `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`").queue()
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().where {
@@ -160,7 +160,7 @@ class PokeCommands(
                     }.count()
                 }
                 if(total == 0L)
-                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]}`")
+                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
                 else
                     event.hook.sendMessage("Smash has won `${"%.2f".format((smashes / total) * 100)}`% of the time").queue()
             }
@@ -178,7 +178,7 @@ class PokeCommands(
                 }
 
                 if(total == 0L)
-                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]}`")
+                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
                 else
                     event.hook.sendMessage("`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
                         bot.map[pokemonId]
@@ -271,7 +271,7 @@ class PokeCommands(
                 }.count()
             }
             if (format == "count") {
-                event.hook.sendMessage("`$smashes` server(s) have voted to smash `${bot.map[pokemonId]}`").queue()
+                event.hook.sendMessage("`$smashes` server(s) have voted to smash `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`").queue()
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().where {
@@ -279,7 +279,7 @@ class PokeCommands(
                     }.count()
                 }
                 if(total == 0L)
-                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]}`")
+                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
                 else
                     event.hook.sendMessage("Smash has won `${"%.2f".format((smashes / total) * 100)}`% of the time").queue()
             }
@@ -301,10 +301,10 @@ class PokeCommands(
                 }
 
                 if(total == 0L)
-                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]}`")
+                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
                 else
                     event.hook.sendMessage("`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
-                        bot.map[pokemonId]
+                        bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)
                     } have been for smash")
                         .queue()
             }
@@ -438,7 +438,7 @@ class PokeCommands(
                 }.count()
             }
             if (format == "count") {
-                event.hook.sendMessage("`$smashes` server(s) have voted to pass `${bot.map[pokemonId]}`").queue()
+                event.hook.sendMessage("`$smashes` server(s) have voted to pass `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`").queue()
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().where {
@@ -446,16 +446,18 @@ class PokeCommands(
                     }.count()
                 }
                 if(total == 0L)
-                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]}`")
+                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
                 else
                     event.hook.sendMessage("Pass has won `${"%.2f".format((smashes / total) * 100)}`% of the time").queue()
             }
         } else {
             val smashes = transaction(bot.db) {
-                PollTable.select(PollTable.passes).sumOf { it[PollTable.passes] }
+                PollTable.select(PollTable.passes).where {
+                    PollTable.pokemon eq pokemonId.toLong()
+                }.sumOf { it[PollTable.passes] }
             }
             if (format == "count") {
-                event.hook.sendMessage("There have been `$smashes` votes for pass").queue()
+                event.hook.sendMessage("There have been `$smashes` votes to pass ${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}").queue()
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().sumOf {
@@ -464,7 +466,7 @@ class PokeCommands(
                 }
 
                 if(total == 0L)
-                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]}`")
+                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
                 else
                     event.hook.sendMessage("`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
                         bot.map[pokemonId]
@@ -505,7 +507,7 @@ class PokeCommands(
                 }.count()
             }
             if (format == "count") {
-                event.hook.sendMessage("`$smashes` server(s) have voted to pass `${bot.map[pokemonId]}`").queue()
+                event.hook.sendMessage("`$smashes` server(s) have voted to pass `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`").queue()
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().where {
@@ -513,9 +515,9 @@ class PokeCommands(
                     }.count()
                 }
                 if(total == 0L)
-                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]}`")
+                    event.hook.sendMessage("This server has not completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
                 else
-                    event.hook.sendMessage("Pass has won `${"%.2f".format((smashes / total) * 100)}`% of the time").queue()
+                    event.hook.sendMessage("Pass has won `${"%.2f".format((smashes / total) * 100)}`% of the time for ${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}").queue()
             }
         } else {
             val smashes = transaction(bot.db) {
@@ -524,7 +526,7 @@ class PokeCommands(
                 }.sumOf { it[PollTable.passes] }
             }
             if (format == "count") {
-                event.hook.sendMessage("There have been `$smashes` votes for pass").queue()
+                event.hook.sendMessage("There have been `$smashes` votes to pass ${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}").queue()
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().where {
@@ -535,10 +537,10 @@ class PokeCommands(
                 }
 
                 if(total == 0L)
-                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]}`")
+                    event.hook.sendMessage("This server has not completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
                 else
                     event.hook.sendMessage("`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
-                        bot.map[pokemonId]
+                        bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)
                     } have been for pass")
                         .queue()
             }
