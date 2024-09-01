@@ -8,7 +8,7 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 object GuildTable : LongIdTable("serverinfo", columnName = "guildId") {
     val name = text("name")
     val polls = integer("pollCount")
-    val offset = long("offset")
+    val offset = integer("offset")
     val smashes = long("smash")
     val passes = long("pass")
     val channel = long("channel").nullable()
@@ -17,7 +17,7 @@ object GuildTable : LongIdTable("serverinfo", columnName = "guildId") {
 class GuildEntity(id: EntityID<Long>) : LongEntity(id) {
     var name: String by GuildTable.name
     var polls: Int by GuildTable.polls
-    var offset: Long by GuildTable.offset
+    var offset: Int by GuildTable.offset
     var smashes: Long by GuildTable.smashes
     var passes: Long by GuildTable.passes
     var channel: Long? by GuildTable.channel
