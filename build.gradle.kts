@@ -36,7 +36,6 @@ nyx {
 repositories {
     soloStudios()
     mavenCentral()
-    maven("https://jitpack.io")
 }
 
 dependencies {
@@ -71,8 +70,6 @@ dependencies {
     implementation(libs.kotlinx.uuid.exposed)
 
     implementation(libs.bundles.cloud)
-
-    implementation("com.github.PokeAPI:pokekotlin:2.3.1")
 }
 
 tasks.register<JavaExec>("genMap") {
