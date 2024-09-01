@@ -29,8 +29,6 @@ import org.slf4j.kotlin.getLogger
 import org.slf4j.kotlin.info
 import java.util.concurrent.ThreadFactory
 import kotlin.collections.set
-import kotlin.io.path.Path
-import kotlin.io.path.bufferedReader
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
@@ -149,9 +147,7 @@ class PokeSmashBot(builder: JDABuilder) {
     private fun loadMap() {
         logger.info { "Loading pokemon map" }
 
-        val pokemonMap = Path("src/main/resources/pokemon_map.txt")
-
-        pokemonMap.bufferedReader().useLines { lines ->
+        this::class.java.getResourceAsStream("/pokemon_map.txt")!!.bufferedReader().useLines { lines ->
             lines.withIndex().forEach {
                 map[it.index + 1] = it.value
             }
