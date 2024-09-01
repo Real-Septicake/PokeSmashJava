@@ -6,11 +6,7 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.github.classgraph.ClassGraph
 import io.github.septicake.cloud.PokeMeta
-import io.github.septicake.cloud.annotations.ChannelRestriction
-import io.github.septicake.cloud.annotations.GuildOnly
-import io.github.septicake.cloud.annotations.Pokemon
-import io.github.septicake.cloud.annotations.RequireOptions
-import io.github.septicake.cloud.annotations.UserPermissions
+import io.github.septicake.cloud.annotations.*
 import io.github.septicake.cloud.manager.PokeCloudCommandManager
 import io.github.septicake.cloud.manager.PokemonComponentPreprocessor
 import io.github.septicake.cloud.manager.RequireOptionComponentPreprocessor
@@ -18,15 +14,8 @@ import io.github.septicake.db.GuildTable
 import io.github.septicake.db.PokemonTable
 import io.github.septicake.db.PollTable
 import io.github.septicake.db.WhitelistTable
-import io.github.septicake.util.ScheduledThreadPool
-import io.github.septicake.util.currentThread
-import io.github.septicake.util.getEnv
-import io.github.septicake.util.processors
-import io.github.septicake.util.runtime
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Runnable
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.asCoroutineDispatcher
+import io.github.septicake.util.*
+import kotlinx.coroutines.*
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.Guild
 import org.incendo.cloud.annotations.AnnotationParser
@@ -34,11 +23,7 @@ import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.incendo.cloud.discord.jda5.annotation.ReplySettingBuilderModifier
 import org.incendo.cloud.discord.slash.annotation.CommandScopeBuilderModifier
 import org.incendo.cloud.kotlin.coroutines.annotations.installCoroutineSupport
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.DatabaseConfig
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.getLogger
 import org.slf4j.kotlin.info
@@ -102,7 +87,9 @@ class PokeSmashBot(builder: JDABuilder) {
             .enableAllInfo()
             .acceptPackages("io.github.septicake.commands")
             .scan().use { results ->
-                val commandContainers = results.allClasses.map { classInfo ->
+                val commandContainers = results.allClasses.filter {
+                    !it.loadClass().kotlin.constructors.isEmpty()
+                }.map { classInfo ->
                     val clazz = classInfo.loadClass().kotlin
                     clazz.constructors.single().call(this)
                 }
