@@ -7,6 +7,12 @@ plugins {
     alias(libs.plugins.nyx)
 
     alias(libs.plugins.axion.release)
+
+    application
+}
+
+application {
+    mainClass = "io.github.septicake.LaunchKt"
 }
 
 nyx {
