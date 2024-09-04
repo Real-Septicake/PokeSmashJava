@@ -10,7 +10,7 @@ val logger by getLogger()
 
 object PollTable : IntIdTable("votes") {
     val guild = long("guildId").index()
-    val pokemon = long("pokeId").index()
+    val pokemon = integer("pokeId").index()
     val smashes = long("smashes")
     val passes = long("passes")
     val result = customEnumeration("result", fromDb = {
@@ -28,11 +28,11 @@ object PollTable : IntIdTable("votes") {
 }
 
 class PollEntity(id: EntityID<Int>) : IntEntity(id) {
-    val guild: Long by PollTable.guild
-    val pokemon: Long by PollTable.pokemon
+    var guild: Long by PollTable.guild
+    var pokemon: Int by PollTable.pokemon
     var smashes: Long by PollTable.smashes
     var passes: Long by PollTable.passes
-    val result: PollResult by PollTable.result
+    var result: PollResult by PollTable.result
 
     companion object : IntEntityClass<PollEntity>(PollTable)
 }

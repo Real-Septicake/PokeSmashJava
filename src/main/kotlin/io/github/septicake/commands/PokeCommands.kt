@@ -148,7 +148,7 @@ class PokeCommands(
         if (info == "polls") {
             val smashes = transaction(bot.db) {
                 PollTable.selectAll().where {
-                    PollTable.result eq PollResult.SMASHED and (PollTable.pokemon eq pokemonId.toLong())
+                    PollTable.result eq PollResult.SMASHED and (PollTable.pokemon eq pokemonId)
                 }.count()
             }
             if (format == "count") {
@@ -156,7 +156,7 @@ class PokeCommands(
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().where {
-                        PollTable.pokemon eq pokemonId.toLong()
+                        PollTable.pokemon eq pokemonId
                     }.count()
                 }
                 if(total == 0L)
@@ -266,7 +266,7 @@ class PokeCommands(
         if (info == "polls") {
             val smashes = transaction(bot.db) {
                 PollTable.selectAll().where {
-                    PollTable.result eq PollResult.SMASHED and (PollTable.pokemon eq pokemonId.toLong()
+                    PollTable.result eq PollResult.SMASHED and (PollTable.pokemon eq pokemonId
                             and (PollTable.guild eq event.guild!!.idLong))
                 }.count()
             }
@@ -275,7 +275,7 @@ class PokeCommands(
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().where {
-                        PollTable.pokemon eq pokemonId.toLong() and (PollTable.guild eq event.guild!!.idLong)
+                        PollTable.pokemon eq pokemonId and (PollTable.guild eq event.guild!!.idLong)
                     }.count()
                 }
                 if(total == 0L)
@@ -434,7 +434,7 @@ class PokeCommands(
         if (info == "polls") {
             val smashes = transaction(bot.db) {
                 PollTable.selectAll().where {
-                    PollTable.result eq PollResult.PASSED and (PollTable.pokemon eq pokemonId.toLong())
+                    PollTable.result eq PollResult.PASSED and (PollTable.pokemon eq pokemonId)
                 }.count()
             }
             if (format == "count") {
@@ -442,7 +442,7 @@ class PokeCommands(
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().where {
-                        PollTable.pokemon eq pokemonId.toLong()
+                        PollTable.pokemon eq pokemonId
                     }.count()
                 }
                 if(total == 0L)
@@ -453,7 +453,7 @@ class PokeCommands(
         } else {
             val smashes = transaction(bot.db) {
                 PollTable.select(PollTable.passes).where {
-                    PollTable.pokemon eq pokemonId.toLong()
+                    PollTable.pokemon eq pokemonId
                 }.sumOf { it[PollTable.passes] }
             }
             if (format == "count") {
@@ -502,7 +502,7 @@ class PokeCommands(
         if (info == "polls") {
             val smashes = transaction(bot.db) {
                 PollTable.selectAll().where {
-                    PollTable.result eq PollResult.PASSED and (PollTable.pokemon eq pokemonId.toLong()
+                    PollTable.result eq PollResult.PASSED and (PollTable.pokemon eq pokemonId
                             and (PollTable.guild eq event.guild!!.idLong))
                 }.count()
             }
@@ -511,7 +511,7 @@ class PokeCommands(
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().where {
-                        PollTable.pokemon eq pokemonId.toLong() and (PollTable.guild eq event.guild!!.idLong)
+                        PollTable.pokemon eq pokemonId and (PollTable.guild eq event.guild!!.idLong)
                     }.count()
                 }
                 if(total == 0L)
