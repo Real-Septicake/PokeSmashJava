@@ -2,6 +2,7 @@ package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
 import io.github.septicake.cloud.annotations.GuildOnly
+import io.github.septicake.cloud.annotations.Pokemon
 import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.WhitelistEntity
@@ -146,5 +147,51 @@ class ModCommands(
             "User `${event.user.name}` from server `${event.guild!!.name}` sent: $msg"
         ).queue()
         event.hook.sendMessage("Message sent.").queue()
+    }
+
+    @GuildOnly
+    @UserPermissions(whitelistOnly = true)
+    @Command("set poll <pokemon> <smashes> <passes>")
+    fun addPollCommand(
+        interaction: JDAInteraction,
+        @Argument("pokemon")
+        @Pokemon
+        pokemon: String,
+        @Argument("smashes")
+        smashes: Long,
+        @Argument("passes")
+        passes: Long
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+        val pokemonId = pokemon.toIntOrNull() ?: bot.map.inverse()[pokemon.lowercase()]!!
+        try {
+            bot.setPollResults(event.guild!!.idLong, pokemonId, smashes, passes)
+            event.hook.sendMessage("Poll result set.").queue()
+        } catch(e: PokeSmashBot.ServerNotPopulatedException) {
+            event.hook.sendMessage("Server has not been populated yet.").queue()
+        }
+    }
+
+    @GuildOnly
+    @UserPermissions(whitelistOnly = true)
+    @Command("remove poll <pokemon>")
+    fun removePollCommand(
+        interaction: JDAInteraction,
+        @Argument("pokemon")
+        @Pokemon
+        pokemon: String
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+        val pokemonId = pokemon.toIntOrNull() ?: bot.map.inverse()[pokemon.lowercase()]!!
+        try {
+            bot.removePollResults(event.guild!!.idLong, pokemonId)
+            event.hook.sendMessage("Poll result removed.").queue()
+        } catch(e: PokeSmashBot.ServerNotPopulatedException) {
+            event.hook.sendMessage("Server has not been populated yet.").queue()
+        } catch(e: PokeSmashBot.PollDoesNotExistException) {
+            event.hook.sendMessage("Poll does not exist.").queue()
+        }
     }
 }

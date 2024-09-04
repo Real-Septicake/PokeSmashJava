@@ -1,5 +1,6 @@
 package io.github.septicake
 
+import ca.solostudios.guava.kotlin.collect.get
 import com.google.common.collect.BiMap
 import com.google.common.collect.HashBiMap
 import com.zaxxer.hikari.HikariConfig
@@ -10,10 +11,7 @@ import io.github.septicake.cloud.annotations.*
 import io.github.septicake.cloud.manager.PokeCloudCommandManager
 import io.github.septicake.cloud.manager.PokemonComponentPreprocessor
 import io.github.septicake.cloud.manager.RequireOptionComponentPreprocessor
-import io.github.septicake.db.GuildTable
-import io.github.septicake.db.PokemonTable
-import io.github.septicake.db.PollTable
-import io.github.septicake.db.WhitelistTable
+import io.github.septicake.db.*
 import io.github.septicake.util.*
 import kotlinx.coroutines.*
 import net.dv8tion.jda.api.JDABuilder
@@ -167,9 +165,150 @@ class PokeSmashBot(builder: JDABuilder) {
         return userServerWhitelisted(guild.idLong, user)
     }
 
+    fun setPollResults(guildId: Long, pokemonId: Int, smashVotes: Long, passVotes: Long) {
+        val exists = transaction(db) {
+            !PollTable.selectAll()
+                .where { PollTable.guild eq guildId and (PollTable.pokemon eq pokemonId) }
+                .empty()
+        }
+        if(exists) {
+            val poll = transaction(db) {
+                PollEntity.find {
+                    PollTable.guild eq guildId and (PollTable.pokemon eq pokemonId)
+                }[0]
+            }
+            val guildInfo = transaction(db) {
+                GuildEntity.findById(guildId)
+            }!!
+            val pokemonInfo = transaction(db) {
+                PokemonEntity.findById(pokemonId)
+            }!!
+            val prevResult = poll.result
+
+            // Remove results from previous poll
+            if(prevResult == PollResult.SMASHED) {
+                transaction(db) {
+                    guildInfo.smashes -= 1
+                    pokemonInfo.smashWins -= 1
+                }
+            } else {
+                transaction(db) {
+                    guildInfo.passes -= 1
+                    pokemonInfo.passWins -= 1
+                }
+            }
+            // Extract duplicate transaction code
+            transaction(db) {
+                pokemonInfo.smashes -= poll.smashes
+                pokemonInfo.passes -= poll.passes
+            }
+
+            val newResult = if(passVotes >= smashVotes) PollResult.PASSED else PollResult.SMASHED
+            if(newResult == PollResult.SMASHED) {
+                transaction(db) {
+                    guildInfo.smashes += 1
+                    pokemonInfo.smashWins += 1
+                }
+            } else {
+                transaction(db) {
+                    guildInfo.passes += 1
+                    pokemonInfo.passWins += 1
+                }
+            }
+            // Extract duplicate transaction code
+            transaction(db) {
+                pokemonInfo.smashes += smashVotes
+                pokemonInfo.passes += passVotes
+                poll.smashes = smashVotes
+                poll.passes = passVotes
+                poll.result = newResult
+            }
+        } else {
+            val guildInfo = transaction(db) {
+                GuildEntity.findById(guildId)
+            } ?: throw ServerNotPopulatedException()
+            val pokemonInfo = transaction(db) {
+                PokemonEntity.findById(pokemonId)
+                    ?: PokemonEntity.new {
+                        id._value = pokemonId
+                        smashWins = 0
+                        smashes = 0
+                        passWins = 0
+                        passes = 0
+                    }
+            }
+            val result = if(passVotes >= smashVotes) PollResult.PASSED else PollResult.SMASHED
+            if(result == PollResult.SMASHED) {
+                transaction(db) {
+                    pokemonInfo.smashWins += 1
+                    guildInfo.smashes += 1
+                }
+            } else {
+                transaction(db) {
+                    pokemonInfo.passWins += 1
+                    guildInfo.passes += 1
+                }
+            }
+            transaction(db) {
+                pokemonInfo.smashes += smashVotes
+                pokemonInfo.passes += passVotes
+            }
+
+            transaction(db) {
+                PollEntity.new {
+                    guild = guildId
+                    pokemon = pokemonId
+                    smashes = smashVotes
+                    passes = passVotes
+                    this.result = result
+                }
+            }
+        }
+    }
+
+    fun removePollResults(guildId: Long, pokemonId: Int) {
+        val guildInfo = transaction(db) {
+            GuildEntity.findById(guildId)
+        } ?: throw ServerNotPopulatedException()
+
+        val exists = transaction(db) {
+            !PollTable.selectAll()
+                .where { PollTable.guild eq guildId and (PollTable.pokemon eq pokemonId) }
+                .empty()
+        }
+        if(exists) {
+            val poll = transaction(db) {
+                PollEntity.find {
+                    PollTable.guild eq guildId and (PollTable.pokemon eq pokemonId)
+                }[0]
+            }
+            val pokemonInfo = transaction(db) {
+                PokemonEntity.findById(pokemonId)
+            }!!
+
+            if(poll.result == PollResult.SMASHED) {
+                transaction(db) {
+                    guildInfo.smashes -= 1
+                    pokemonInfo.smashWins -= 1
+                }
+            } else {
+                transaction(db) {
+                    guildInfo.passes -= 1
+                    pokemonInfo.passWins -= 1
+                }
+            }
+            transaction(db) {
+                pokemonInfo.smashes -= poll.smashes
+                pokemonInfo.passes -= poll.passes
+                poll.delete()
+            }
+        } else
+            throw PollDoesNotExistException()
+    }
+
     fun userServerWhitelisted(guild: Long, user: Long): Boolean {
-        return !transaction(db) {
-            WhitelistTable.selectAll()
+        return transaction(db) {
+            !WhitelistTable.selectAll()
                 .where { WhitelistTable.guild eq guild and (WhitelistTable.user eq user) }
                 .empty()
         }
@@ -182,4 +321,6 @@ class PokeSmashBot(builder: JDABuilder) {
         override fun newThread(runnable: Runnable): Thread = Thread(threadGroup, runnable, "PokeSmash-Worker-${threadCount++}", 0)
     }
 
+    class ServerNotPopulatedException : IllegalStateException()
+    class PollDoesNotExistException : IllegalStateException()
 }
