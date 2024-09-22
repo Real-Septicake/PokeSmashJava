@@ -2,6 +2,7 @@ package io.github.septicake.cloud.manager
 
 import io.github.septicake.PokeSmashBot
 import io.github.septicake.cloud.postprocessors.ChannelRestrictionPostprocessor
+import io.github.septicake.cloud.postprocessors.CommandsEnabledPostprocessor
 import io.github.septicake.cloud.postprocessors.GuildOnlyPostprocessor
 import io.github.septicake.cloud.postprocessors.UserPermissionPostprocessor
 import org.incendo.cloud.discord.jda5.JDA5CommandManager
@@ -23,6 +24,7 @@ class PokeCloudCommandManager(
        registerCommandPostProcessor(ChannelRestrictionPostprocessor<JDAInteraction>(bot))
        registerCommandPostProcessor(UserPermissionPostprocessor<JDAInteraction>(bot))
        registerCommandPostProcessor(GuildOnlyPostprocessor<JDAInteraction>())
+       registerCommandPostProcessor(CommandsEnabledPostprocessor<JDAInteraction>(bot))
    }
 
     override fun hasPermission(sender: JDAInteraction, permission: String): Boolean  = true

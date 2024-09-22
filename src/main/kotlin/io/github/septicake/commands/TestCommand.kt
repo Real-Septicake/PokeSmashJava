@@ -1,6 +1,7 @@
 package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
+import org.incendo.cloud.annotations.Command
 import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.slf4j.kotlin.getLogger
 
@@ -9,10 +10,11 @@ class TestCommand(
 ) {
     private val logger by getLogger()
 
+    @Command("test")
     fun testCommand(
         interaction: JDAInteraction
     ) {
         val event = interaction.interactionEvent() ?: return
-
+        event.reply("why are you running this").queue()
     }
 }

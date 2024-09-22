@@ -1,9 +1,7 @@
 package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
-import io.github.septicake.cloud.annotations.GuildOnly
-import io.github.septicake.cloud.annotations.Pokemon
-import io.github.septicake.cloud.annotations.UserPermissions
+import io.github.septicake.cloud.annotations.*
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.WhitelistEntity
 import io.github.septicake.db.WhitelistTable
@@ -25,6 +23,8 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("whitelist add <user>")
+    @CommandName("Add Whitelist")
+    @CommandParams("user")
     fun whitelistAddCommand(
         interaction: JDAInteraction,
         @Argument("user")
@@ -48,6 +48,7 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("whitelist remove <user>")
+    @CommandName("Remove Whitelist")
     fun whitelistRemoveCommand(
         interaction: JDAInteraction,
         @Argument("user")
@@ -70,6 +71,7 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("set channel <channel>")
+    @CommandName("Set Channel")
     fun setChannel(
         interaction: JDAInteraction,
         @Argument("channel")
@@ -99,6 +101,7 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("populate <channel> [polls]")
+    @CommandName("Populate")
     fun populateCommand(
         interaction: JDAInteraction,
         @Argument("channel", description = "Channel for `next` to be called in, and where announcements will be sent to")
@@ -135,6 +138,7 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(whitelistOnly = true)
     @Command("reply <msg>")
+    @CommandName("Reply")
     fun replyCommand(
         interaction: JDAInteraction,
         @Argument("msg")
@@ -150,8 +154,9 @@ class ModCommands(
     }
 
     @GuildOnly
-    @UserPermissions(whitelistOnly = true)
+    @UserPermissions(guildOwnerOnly = true)
     @Command("set poll <pokemon> <smashes> <passes>")
+    @CommandName("Set Poll")
     fun addPollCommand(
         interaction: JDAInteraction,
         @Argument("pokemon")
@@ -174,8 +179,9 @@ class ModCommands(
     }
 
     @GuildOnly
-    @UserPermissions(whitelistOnly = true)
+    @UserPermissions(guildOwnerOnly = true)
     @Command("remove poll <pokemon>")
+    @CommandName("Remove Poll")
     fun removePollCommand(
         interaction: JDAInteraction,
         @Argument("pokemon")

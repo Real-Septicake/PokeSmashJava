@@ -2,6 +2,8 @@ package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
 import io.github.septicake.cloud.annotations.ChannelRestriction
+import io.github.septicake.cloud.annotations.CommandName
+import io.github.septicake.cloud.annotations.CommandParams
 import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.GuildTable
@@ -16,10 +18,26 @@ class DevCommands(
     private val bot : PokeSmashBot
 ) {
 
+    @Command("allow commands <val>")
+    @UserPermissions(botOwnerOnly = true)
+    @CommandName("Command Toggle")
+    @CommandParams("val")
+    fun commandToggleCommand(
+        interaction: JDAInteraction,
+        @Argument("val")
+        value: Boolean
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        bot.commandsEnabled = value
+        event.reply("Commands ${if(value) "enabled" else "disabled"}.").queue()
+    }
+
     @Command("message <server> <msg>")
     @CommandDescription("Send a message to a server's channel.")
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
+    @CommandName("Message")
+    @CommandParams("server", "msg")
     fun messageCommand(
         interaction: JDAInteraction,
         @Argument("server")
@@ -54,6 +72,8 @@ class DevCommands(
     @Command("announce <msg>")
     @CommandDescription("Announce a message to every server's channel.")
     @UserPermissions(botOwnerOnly = true)
+    @CommandName("Announce")
+    @CommandParams("msg")
     fun announceCommand(
         interaction: JDAInteraction,
         @Argument("msg")
@@ -90,10 +110,12 @@ class DevCommands(
 
     @Command("shutdown [test]")
     @UserPermissions(botOwnerOnly = true)
+    @CommandName("Shutdown")
+    @CommandParams("test")
     suspend fun shutdownCommand(
         interaction: JDAInteraction,
         @Argument("test", description = "The shutdown is for a test and does not announce the shutdown to servers")
-        test: Boolean = false
+        test: Boolean = true
     ) {
         val event = interaction.interactionEvent() ?: return
         event.reply("Shutting down...").queue()

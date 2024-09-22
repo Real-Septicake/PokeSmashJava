@@ -1,10 +1,7 @@
 package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
-import io.github.septicake.cloud.annotations.GuildOnly
-import io.github.septicake.cloud.annotations.Pokemon
-import io.github.septicake.cloud.annotations.RequireOptions
-import io.github.septicake.cloud.annotations.UserPermissions
+import io.github.septicake.cloud.annotations.*
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.PollResult
 import io.github.septicake.db.PollTable
@@ -26,6 +23,7 @@ class PokeCommands(
     @Command("reset")
     @GuildOnly
     @UserPermissions(whitelistOnly = true)
+    @CommandName("Reset")
     fun resetCommand(
         interaction: JDAInteraction
     ) {
@@ -45,6 +43,8 @@ class PokeCommands(
     @Command("next")
     @GuildOnly
     @UserPermissions(whitelistOnly = true)
+    @CommandsEnabled
+    @CommandName("Next")
     suspend fun nextCommand(
         interaction: JDAInteraction
     ) {

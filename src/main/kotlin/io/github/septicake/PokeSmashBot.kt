@@ -44,6 +44,8 @@ class PokeSmashBot(builder: JDABuilder) {
     val testingChannel = getEnv("TESTING_CHANNEL")
     val replyChannel = getEnv("REPLY_CHANNEL")
 
+    var commandsEnabled = true
+
     val map: BiMap<Int, String> = HashBiMap.create(1000)
 
     val commandManager = PokeCloudCommandManager(this)
@@ -56,6 +58,9 @@ class PokeSmashBot(builder: JDABuilder) {
         registerBuilderModifier(ChannelRestriction::class.java, PokeMeta::channelRestrictionModifier)
         registerBuilderModifier(UserPermissions::class.java, PokeMeta::userPermissionModifier)
         registerBuilderModifier(GuildOnly::class.java, PokeMeta::guildOnlyModifier)
+        registerBuilderModifier(CommandsEnabled::class.java, PokeMeta::commandsEnabledModifier)
+        registerBuilderModifier(CommandName::class.java, PokeMeta::commandNameModifier)
+        registerBuilderModifier(CommandParams::class.java, PokeMeta::commandParamsModifier)
 
         registerPreprocessorMapper(RequireOptions::class.java) { annotation ->
             RequireOptionComponentPreprocessor(annotation.options)

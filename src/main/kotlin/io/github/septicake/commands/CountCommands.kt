@@ -1,6 +1,8 @@
 package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
+import io.github.septicake.cloud.annotations.CommandName
+import io.github.septicake.cloud.annotations.CommandParams
 import io.github.septicake.cloud.annotations.GuildOnly
 import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.db.GuildEntity
@@ -17,6 +19,8 @@ class CountCommands(
     @GuildOnly
     @UserPermissions(whitelistOnly = true)
     @Command(value = "set count <count>")
+    @CommandName("Set Count")
+    @CommandParams("count")
     fun countSetCommand(
         interaction: JDAInteraction,
         @Argument(value = "count", description = "new number of polls per call, can only be used by whitelisted users, value must be within 1 and 10")
