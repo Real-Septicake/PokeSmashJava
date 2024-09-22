@@ -70,6 +70,8 @@ dependencies {
     implementation(libs.kotlinx.uuid.exposed)
 
     implementation(libs.bundles.cloud)
+
+    implementation(libs.cache4k)
 }
 
 tasks.register<JavaExec>("genMap") {

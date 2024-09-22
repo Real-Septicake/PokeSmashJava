@@ -1,4 +1,4 @@
-package io.github.septicake.cloud.postprocessors
+package io.github.septicake.cloud.postprocess
 
 import io.github.septicake.PokeSmashBot
 import io.github.septicake.PokeSmashConstants
@@ -11,10 +11,13 @@ import org.incendo.cloud.execution.postprocessor.CommandPostprocessor
 import org.incendo.cloud.kotlin.extension.getOrNull
 import org.incendo.cloud.meta.CommandMeta
 import org.incendo.cloud.services.type.ConsumerService
+import org.slf4j.kotlin.getLogger
+import org.slf4j.kotlin.warn
 
 class UserPermissionPostprocessor<C>(
     private val bot : PokeSmashBot
 ) : CommandPostprocessor<C> {
+    private val logger by getLogger()
 
     override fun accept(postprocessingContext: CommandPostprocessingContext<C>) {
         val context = postprocessingContext.commandContext()
@@ -47,11 +50,16 @@ class UserPermissionPostprocessor<C>(
     }
 
     private fun logFailedUse(meta: CommandMeta, context: CommandContext<C & Any>, interaction: GenericCommandInteractionEvent) {
-        println(
-            "User \"${interaction.user.idLong}\" attempted to use command \"${meta.get(PokeMeta.COMMAND_NAME)}\" " +
-            "with params:\n${meta.getOrNull(PokeMeta.COMMAND_PARAMS)?.reduce { acc, s -> 
-                acc + s + ": " + context.get<Any>(s).toString() + "\n" }
-            }"
-        )
+        logger.warn {
+            val commandParameters = meta.getOrNull(PokeMeta.COMMAND_PARAMS)?.reduce { acc, s ->
+                val get = context.get<Any>(s)
+                "$acc$s: $get\n"
+            }.orEmpty()
+
+            val commandName = meta.get(PokeMeta.COMMAND_NAME)
+            val userId = interaction.user.idLong
+
+            "User \"$userId\" attempted to use command \"$commandName\" with params:\n$commandParameters"
+        }
     }
 }

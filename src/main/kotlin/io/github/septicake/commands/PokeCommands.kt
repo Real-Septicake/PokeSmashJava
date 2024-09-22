@@ -1,16 +1,27 @@
 package io.github.septicake.commands
 
+import dev.minn.jda.ktx.coroutines.await
+import dev.minn.jda.ktx.messages.Embed
 import io.github.septicake.PokeSmashBot
-import io.github.septicake.cloud.annotations.*
+import io.github.septicake.cloud.annotations.CommandName
+import io.github.septicake.cloud.annotations.CommandsEnabled
+import io.github.septicake.cloud.annotations.GuildOnly
+import io.github.septicake.cloud.annotations.Pokemon
+import io.github.septicake.cloud.annotations.RequireOptions
+import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.db.GuildEntity
+import io.github.septicake.db.PokemonEntity
+import io.github.septicake.db.PollEntity
 import io.github.septicake.db.PollResult
 import io.github.septicake.db.PollTable
 import io.github.septicake.pokeapi.PokeApi
+import io.github.septicake.pokeapi.PokemonInfo
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.utils.messages.MessagePollData
 import org.incendo.cloud.annotations.Argument
 import org.incendo.cloud.annotations.Command
 import org.incendo.cloud.discord.jda5.JDAInteraction
+import org.incendo.cloud.discord.slash.annotation.CommandScope
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -58,7 +69,7 @@ class PokeCommands(
         } else {
             val count = min(bot.map.size - info.offset, info.polls)
             if(count != 0){
-                PokeApi.pokemonPaged(info.offset, count).results.forEach { pokemon ->
+                PokeApi.listPokemonPaged(info.offset, count).results.forEach { pokemon ->
                     (event.channel as MessageChannel).sendMessage("").setPoll(
                         MessagePollData.builder(pokemon.name.replaceFirstChar { it.titlecase() })
                             .addAnswer("Smash")
@@ -545,5 +556,41 @@ class PokeCommands(
                         .queue()
             }
         }
+    }
+
+    @GuildOnly
+    @CommandScope(guilds = [-1])
+    @Command("pokemon info <pokemon>")
+    suspend fun pokemonInfoCommand(
+        interaction: JDAInteraction,
+        @Argument(
+            value = "pokemon",
+            description = """
+                The pokemon to query.
+                Defaults to the currently active pokemon.
+            """
+        )
+        pokemon: PokemonInfo,
+    ) {
+        val event = interaction.interactionEvent() ?: error("The interaction event should never be null")
+        event.deferReply(true).await()
+
+        val jdaGuild = interaction.guild() ?: error("The guild should never be null")
+        val pokemonEntity = PokemonEntity.findById(pokemon.id)
+        val pollEntity = PollEntity.find { (PollTable.guild eq jdaGuild.idLong) and (PollTable.pokemon eq pokemon.id) }
+
+        Embed {
+            // color = pokemon.
+        }
+    }
+
+    enum class QueryLocation {
+        SERVER,
+        GLOBAL
+    }
+
+    enum class QueryInfo {
+        POLLS,
+        VOTES
     }
 }

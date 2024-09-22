@@ -4,6 +4,10 @@ import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.sql.DenseRank
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.Query
+import org.jetbrains.exposed.sql.SortOrder
 import org.slf4j.kotlin.getLogger
 
 val logger by getLogger()
@@ -25,6 +29,8 @@ object PollTable : IntIdTable("votes") {
     }, toDb = {
         res: PollResult -> res.value
     }).index()
+
+    val rank = DenseRank().over().orderBy(passes to SortOrder.DESC)
 }
 
 class PollEntity(id: EntityID<Int>) : IntEntity(id) {
@@ -34,7 +40,16 @@ class PollEntity(id: EntityID<Int>) : IntEntity(id) {
     var passes: Long by PollTable.passes
     var result: PollResult by PollTable.result
 
-    companion object : IntEntityClass<PollEntity>(PollTable)
+    val rank: Long
+        get() = readValues[PollTable.rank]
+
+    companion object : IntEntityClass<PollEntity>(PollTable) {
+        override fun searchQuery(op: Op<Boolean>): Query {
+            return super.searchQuery(op).adjustSelect {
+                select(columns + PollTable.rank)
+            }
+        }
+    }
 }
 
 enum class PollResult(val value: Int) {

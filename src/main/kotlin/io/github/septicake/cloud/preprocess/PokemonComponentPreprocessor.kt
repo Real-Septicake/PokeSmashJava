@@ -1,4 +1,4 @@
-package io.github.septicake.cloud.manager
+package io.github.septicake.cloud.preprocess
 
 import io.github.septicake.PokeSmashBot
 import org.incendo.cloud.component.preprocessor.ComponentPreprocessor

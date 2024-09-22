@@ -1,4 +1,4 @@
-package io.github.septicake.cloud.manager
+package io.github.septicake.cloud.preprocess
 
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import org.incendo.cloud.discord.jda5.JDAInteraction

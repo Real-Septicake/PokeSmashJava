@@ -7,26 +7,60 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.github.classgraph.ClassGraph
 import io.github.septicake.cloud.PokeMeta
-import io.github.septicake.cloud.annotations.*
-import io.github.septicake.cloud.manager.PokeCloudCommandManager
-import io.github.septicake.cloud.manager.PokemonComponentPreprocessor
-import io.github.septicake.cloud.manager.RequireOptionComponentPreprocessor
-import io.github.septicake.db.*
-import io.github.septicake.util.*
-import kotlinx.coroutines.*
+import io.github.septicake.cloud.annotations.ChannelRestriction
+import io.github.septicake.cloud.annotations.CommandName
+import io.github.septicake.cloud.annotations.CommandParams
+import io.github.septicake.cloud.annotations.CommandsEnabled
+import io.github.septicake.cloud.annotations.GuildOnly
+import io.github.septicake.cloud.annotations.Pokemon
+import io.github.septicake.cloud.annotations.RequireOptions
+import io.github.septicake.cloud.annotations.UserPermissions
+import io.github.septicake.cloud.parser.PokemonInfoParser
+import io.github.septicake.cloud.postprocess.ChannelRestrictionPostprocessor
+import io.github.septicake.cloud.postprocess.CommandsEnabledPostprocessor
+import io.github.septicake.cloud.postprocess.GuildOnlyPostprocessor
+import io.github.septicake.cloud.postprocess.UserPermissionPostprocessor
+import io.github.septicake.cloud.preprocess.PokeCommandPreprocessor
+import io.github.septicake.cloud.preprocess.PokemonComponentPreprocessor
+import io.github.septicake.cloud.preprocess.RequireOptionComponentPreprocessor
+import io.github.septicake.db.GuildEntity
+import io.github.septicake.db.GuildTable
+import io.github.septicake.db.PokemonEntity
+import io.github.septicake.db.PokemonTable
+import io.github.septicake.db.PollEntity
+import io.github.septicake.db.PollResult
+import io.github.septicake.db.PollTable
+import io.github.septicake.db.WhitelistTable
+import io.github.septicake.util.ScheduledThreadPool
+import io.github.septicake.util.currentThread
+import io.github.septicake.util.getEnv
+import io.github.septicake.util.processors
+import io.github.septicake.util.runtime
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.Guild
 import org.incendo.cloud.annotations.AnnotationParser
+import org.incendo.cloud.discord.jda5.JDA5CommandManager
 import org.incendo.cloud.discord.jda5.JDAInteraction
+import org.incendo.cloud.discord.jda5.JDAInteraction.InteractionMapper
+import org.incendo.cloud.discord.jda5.ReplySetting
 import org.incendo.cloud.discord.jda5.annotation.ReplySettingBuilderModifier
 import org.incendo.cloud.discord.slash.annotation.CommandScopeBuilderModifier
+import org.incendo.cloud.execution.ExecutionCoordinator
 import org.incendo.cloud.kotlin.coroutines.annotations.installCoroutineSupport
-import org.jetbrains.exposed.sql.*
+import org.incendo.cloud.kotlin.extension.parserDescriptor
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.DatabaseConfig
+import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.getLogger
 import org.slf4j.kotlin.info
 import java.util.concurrent.ThreadFactory
-import kotlin.collections.set
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
@@ -48,7 +82,19 @@ class PokeSmashBot(builder: JDABuilder) {
 
     val map: BiMap<Int, String> = HashBiMap.create(1000)
 
-    val commandManager = PokeCloudCommandManager(this)
+    val commandManager = JDA5CommandManager(
+        ExecutionCoordinator.asyncCoordinator(),
+        InteractionMapper.identity()
+    ).apply {
+        registerCommandPreProcessor(PokeCommandPreprocessor())
+
+        registerCommandPostProcessor(ChannelRestrictionPostprocessor<JDAInteraction>(this@PokeSmashBot))
+        registerCommandPostProcessor(UserPermissionPostprocessor<JDAInteraction>(this@PokeSmashBot))
+        registerCommandPostProcessor(GuildOnlyPostprocessor<JDAInteraction>())
+        registerCommandPostProcessor(CommandsEnabledPostprocessor<JDAInteraction>(this@PokeSmashBot))
+
+        parserRegistry().registerParser(parserDescriptor(PokemonInfoParser()))
+    }
 
     val annotationParser = AnnotationParser(commandManager, JDAInteraction::class.java).apply {
         installCoroutineSupport()
@@ -61,6 +107,11 @@ class PokeSmashBot(builder: JDABuilder) {
         registerBuilderModifier(CommandsEnabled::class.java, PokeMeta::commandsEnabledModifier)
         registerBuilderModifier(CommandName::class.java, PokeMeta::commandNameModifier)
         registerBuilderModifier(CommandParams::class.java, PokeMeta::commandParamsModifier)
+
+        // by default all commands should be deferred & ephemeral
+        registerBuilderDecorator { builder ->
+            builder.apply(ReplySetting.defer(true))
+        }
 
         registerPreprocessorMapper(RequireOptions::class.java) { annotation ->
             RequireOptionComponentPreprocessor(annotation.options)
@@ -81,8 +132,6 @@ class PokeSmashBot(builder: JDABuilder) {
 
     suspend fun start() {
         logger.info { "Starting PokeSmashOrPass bot" }
-
-        loadMap()
 
         ClassGraph()
             .enableAllInfo()
@@ -145,18 +194,6 @@ class PokeSmashBot(builder: JDABuilder) {
             jda.shutdownNow()
             jda.awaitShutdown()
         }
-    }
-
-    private fun loadMap() {
-        logger.info { "Loading pokemon map" }
-
-        this::class.java.getResourceAsStream("/pokemon_map.txt")!!.bufferedReader().useLines { lines ->
-            lines.withIndex().forEach {
-                map[it.index + 1] = it.value
-            }
-        }
-
-        logger.info { "Pokemon map loaded" }
     }
 
     fun userWhitelisted(guild: Guild, user: Long): Boolean {
@@ -316,6 +353,14 @@ class PokeSmashBot(builder: JDABuilder) {
             !WhitelistTable.selectAll()
                 .where { WhitelistTable.guild eq guild and (WhitelistTable.user eq user) }
                 .empty()
+        }
+    }
+
+    fun guildEntity(jdaGuild: Guild) = transaction(db) {
+        GuildEntity.findById(jdaGuild.idLong) ?: GuildEntity.new(jdaGuild.idLong) {
+            this.name = jdaGuild.name
+            this.channel = null
+            this.polls = polls
         }
     }
 

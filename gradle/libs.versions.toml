@@ -21,7 +21,9 @@ jetbrains-exposed = "0.53.0"
 
 fuel = "2.3.1"
 
-cloud = "2.0.0-rc.2"
+cloud = "2.0.0"
+
+cache4k = "0.13.0"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -106,6 +108,8 @@ cloud-kotlin-coroutines-annotations = { group = "org.incendo", name = "cloud-kot
 cloud-services = { group = "org.incendo", name = "cloud-services", version.ref = "cloud" }
 #cloud-tasks = { group = "org.incendo", name = "cloud-tasks", version.ref = "cloud" }
 cloud-jda = { group = "org.incendo", name = "cloud-jda5", version = "1.0.0-beta.3" }
+
+cache4k = { group = "io.github.reactivecircus.cache4k", name = "cache4k", version.ref = "cache4k" }
 
 [bundles]
 kotlinx-coroutines-core = ["kotlinx-coroutines-core", "kotlinx-coroutines-jdk8", "kotlinx-coroutines-slf4j"]

@@ -24,11 +24,11 @@ object PokeApi {
             .awaitObject(kotlinxDeserializerOf<T>(serializer<T>(), json))
     }
 
-    suspend fun pokemon(bulkQuery: Int = 20): Flow<Pokemon> = flow {
+    suspend fun listPokemon(bulkQuery: Int = 20): Flow<Pokemon> = flow {
         var results: NamedApiResourceList<Pokemon>
         var offset = 0
         do {
-            results = pokemonPaged(offset = offset, limit = bulkQuery)
+            results = listPokemonPaged(offset = offset, limit = bulkQuery)
             offset += bulkQuery
             for (result in results.results)
                 emit(result)
@@ -36,7 +36,11 @@ object PokeApi {
         } while (results.next != null)
     }
 
-    suspend fun pokemonPaged(offset: Int, limit: Int): NamedApiResourceList<Pokemon> {
+    suspend fun listPokemonPaged(offset: Int, limit: Int): NamedApiResourceList<Pokemon> {
         return request<NamedApiResourceList<Pokemon>>("/pokemon", listOf("offset" to offset, "limit" to limit))
     }
+
+    suspend fun pokemon(name: String): PokemonInfo = request<PokemonInfo>("/pokemon/$name")
+
+    suspend fun pokemon(id: Int): PokemonInfo = request<PokemonInfo>("/pokemon/$id")
 }

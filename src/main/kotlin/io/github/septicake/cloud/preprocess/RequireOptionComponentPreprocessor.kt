@@ -1,4 +1,4 @@
-package io.github.septicake.cloud.manager
+package io.github.septicake.cloud.preprocess
 
 import org.incendo.cloud.component.preprocessor.ComponentPreprocessor
 import org.incendo.cloud.context.CommandContext

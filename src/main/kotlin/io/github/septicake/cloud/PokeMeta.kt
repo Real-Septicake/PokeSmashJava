@@ -1,23 +1,29 @@
 package io.github.septicake.cloud
 
-import io.github.septicake.cloud.annotations.*
+import io.github.septicake.cloud.annotations.ChannelRestriction
+import io.github.septicake.cloud.annotations.CommandName
+import io.github.septicake.cloud.annotations.CommandParams
+import io.github.septicake.cloud.annotations.CommandsEnabled
+import io.github.septicake.cloud.annotations.GuildOnly
+import io.github.septicake.cloud.annotations.UserPermissions
 import org.incendo.cloud.Command.Builder
 import org.incendo.cloud.key.CloudKey
+import org.incendo.cloud.kotlin.extension.cloudKey
 
 object PokeMeta {
-    val WHITELIST_ONLY: CloudKey<Boolean> = CloudKey.of("whitelisted-only", Boolean::class.javaObjectType)
-    val BOT_OWNER_ONLY: CloudKey<Boolean> = CloudKey.of("bot-owner-only", Boolean::class.javaObjectType)
-    val GUILD_OWNER_ONLY: CloudKey<Boolean> = CloudKey.of("guild-owner-only", Boolean::class.javaObjectType)
+    val WHITELIST_ONLY: CloudKey<Boolean> = cloudKey("whitelisted-only")
+    val BOT_OWNER_ONLY: CloudKey<Boolean> = cloudKey("bot-owner-only")
+    val GUILD_OWNER_ONLY: CloudKey<Boolean> = cloudKey("guild-owner-only")
 
-    val SERVER_CHANNEL_ONLY: CloudKey<Boolean> = CloudKey.of("server-channel-only", Boolean::class.javaObjectType)
-    val DEV_CHANNEL_ONLY: CloudKey<Boolean> = CloudKey.of("dev-channel-only", Boolean::class.javaObjectType)
+    val SERVER_CHANNEL_ONLY: CloudKey<Boolean> = cloudKey("server-channel-only")
+    val DEV_CHANNEL_ONLY: CloudKey<Boolean> = cloudKey("dev-channel-only")
 
-    val GUILDS_ONLY: CloudKey<Boolean> = CloudKey.of("guild-only", Boolean::class.javaObjectType)
+    val GUILDS_ONLY: CloudKey<Boolean> = cloudKey("guild-only")
 
-    val COMMANDS_ENABLED: CloudKey<Boolean> = CloudKey.of("commands-enabled", Boolean::class.javaObjectType)
+    val COMMANDS_ENABLED: CloudKey<Boolean> = cloudKey("commands-enabled")
 
-    val COMMAND_NAME: CloudKey<String> = CloudKey.of("command-name", String::class.javaObjectType)
-    val COMMAND_PARAMS: CloudKey<Array<out String>> = CloudKey.of("command-params", Array<out String>::class.javaObjectType)
+    val COMMAND_NAME: CloudKey<String> = cloudKey("command-name")
+    val COMMAND_PARAMS: CloudKey<Array<out String>> = cloudKey("command-params")
 
     fun <T> userPermissionModifier(userPermissions: UserPermissions, builder: Builder<T>) : Builder<T> {
         return builder.meta(WHITELIST_ONLY, userPermissions.whitelistOnly)

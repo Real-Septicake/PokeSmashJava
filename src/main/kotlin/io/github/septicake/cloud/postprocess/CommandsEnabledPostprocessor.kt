@@ -1,4 +1,4 @@
-package io.github.septicake.cloud.postprocessors
+package io.github.septicake.cloud.postprocess
 
 import io.github.septicake.PokeSmashBot
 import io.github.septicake.PokeSmashConstants

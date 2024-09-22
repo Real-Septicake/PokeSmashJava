@@ -1,4 +1,4 @@
-package io.github.septicake.cloud.postprocessors
+package io.github.septicake.cloud.postprocess
 
 import io.github.septicake.cloud.PokeMeta
 import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
