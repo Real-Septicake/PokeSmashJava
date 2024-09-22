@@ -47,12 +47,14 @@ fun main() {
                 return@onJvmShutdown
 
             runBlocking {
-                bot.shutdown()
+                bot.shutdown(true)
             }
-
-            removeJvmShutdownThread(shutdownThread)
         }
     } catch (e: Throwable) {
         logger.error(e) { "Exception occurred while running PokeSmashOrPass bot" }
     }
+}
+
+fun removeShutdownHook() {
+    removeJvmShutdownThread(shutdownThread)
 }

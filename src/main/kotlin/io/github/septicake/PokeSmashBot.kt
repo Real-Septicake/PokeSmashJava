@@ -183,7 +183,7 @@ class PokeSmashBot(builder: JDABuilder) {
         logger.info { "Bot successfully started" }
     }
 
-    suspend fun shutdown() {
+    suspend fun shutdown(isShutdownThread: Boolean = false) {
         shutdown = true
         logger.info { "Shutting down PokeSmashOrPass bot" }
         hikari.close()
@@ -195,6 +195,9 @@ class PokeSmashBot(builder: JDABuilder) {
             jda.shutdownNow()
             jda.awaitShutdown()
         }
+
+        if (!isShutdownThread)
+            removeShutdownHook()
     }
 
     fun userWhitelisted(guild: Guild, user: Long): Boolean {
@@ -364,7 +367,7 @@ class PokeSmashBot(builder: JDABuilder) {
     }
 
     fun pokemonEntity(pokemonId: Int) = transaction(db) {
-        PokemonEntity.findById(pokemonId) ?: PokemonEntity.new {}
+        PokemonEntity.findById(pokemonId) ?: PokemonEntity.new(pokemonId) {}
     }
 
     fun pollEntity(guildId: Long, pokemonId: Int) = transaction(db) {

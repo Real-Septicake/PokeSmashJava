@@ -2,7 +2,6 @@ package io.github.septicake.cloud.parser
 
 import io.github.reactivecircus.cache4k.Cache
 import io.github.septicake.PokeSmashBot
-import io.github.septicake.db.GuildEntity
 import io.github.septicake.pokeapi.PokeApi
 import io.github.septicake.pokeapi.PokemonInfo
 import io.github.septicake.util.argumentParseFailure
@@ -37,10 +36,10 @@ class PokemonInfoParser<C : Any>(
     override fun parse(context: CommandContext<C>, commandInput: CommandInput): ArgumentParseResult<PokemonInfo> {
         val guild = context[JDA5CommandManager.CONTEXT_JDA_INTERACTION].guild()
 
-        val input = commandInput.readString()
+        val input = commandInput.readString().lowercase()
 
-        val parsedId = input.toIntOrNull() ?: nameToId[input.lowercase()]
-        val pokemonId = parsedId ?: if (input.isNotEmpty() && guild != null) bot.guildEntity(guild).offset else null
+        val parsedId = input.toIntOrNull() ?: nameToId[input]
+        val pokemonId = parsedId ?: if (input == "current" && guild != null) bot.guildEntity(guild).offset else null
 
         if (pokemonId == null)
             return ArgumentParseResult.failure(IllegalArgumentException("Could not find a pokemon with the name or id '$input'. The name/id is either incorrect or was not specified"))
@@ -52,10 +51,10 @@ class PokemonInfoParser<C : Any>(
     }
 
     override fun suggestionProvider(): SuggestionProvider<C> {
-        return SuggestionProvider.blockingStrings { context, input ->
+        return SuggestionProvider.blockingStrings { context, _ ->
             val guild = context[JDA5CommandManager.CONTEXT_JDA_INTERACTION].guild()
 
-            val currentId = if (guild != null) GuildEntity.findById(guild.idLong)?.offset else null
+            val currentId = if (guild != null) bot.guildEntity(guild).offset else null
             return@blockingStrings buildList {
                 if (currentId != null) {
                     add(currentId.toString())
