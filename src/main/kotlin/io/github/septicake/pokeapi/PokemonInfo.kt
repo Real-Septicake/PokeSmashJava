@@ -31,7 +31,7 @@ data class PokemonInfo(
     val pastTypes: List<PokemonTypePast>,
     val sprites: JsonObject,
     val cries: JsonObject,
-    val species: JsonObject,
+    val species: PokemonSpecies,
     val stats: JsonArray,
     val types: List<PokemonType.Reference>,
 ) {

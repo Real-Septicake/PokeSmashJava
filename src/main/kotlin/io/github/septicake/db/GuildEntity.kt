@@ -7,11 +7,11 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 
 object GuildTable : LongIdTable("serverinfo", columnName = "guildId") {
     val name = text("name")
-    val polls = integer("pollCount")
-    val offset = integer("offset")
-    val smashes = long("smash")
-    val passes = long("pass")
-    val channel = long("channel").nullable()
+    val polls = integer("pollCount").default(0)
+    val offset = integer("offset").default(0)
+    val smashes = long("smash").default(0)
+    val passes = long("pass").default(0)
+    val channel = long("channel").nullable().default(null)
 }
 
 class GuildEntity(id: EntityID<Long>) : LongEntity(id) {

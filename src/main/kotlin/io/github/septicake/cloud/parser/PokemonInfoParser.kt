@@ -1,6 +1,7 @@
 package io.github.septicake.cloud.parser
 
 import io.github.reactivecircus.cache4k.Cache
+import io.github.septicake.PokeSmashBot
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.pokeapi.PokeApi
 import io.github.septicake.pokeapi.PokemonInfo
@@ -15,7 +16,9 @@ import org.incendo.cloud.parser.ArgumentParser
 import org.incendo.cloud.suggestion.SuggestionProvider
 import kotlin.time.Duration.Companion.days
 
-class PokemonInfoParser<C : Any> : ArgumentParser<C, PokemonInfo> {
+class PokemonInfoParser<C : Any>(
+    private val bot: PokeSmashBot,
+) : ArgumentParser<C, PokemonInfo> {
     private val nameToId: Map<String, Int>
     private val pokemonCache = Cache.Builder<Int, PokemonInfo>().expireAfterWrite(7.days).build()
 
@@ -37,7 +40,7 @@ class PokemonInfoParser<C : Any> : ArgumentParser<C, PokemonInfo> {
         val input = commandInput.readString()
 
         val parsedId = input.toIntOrNull() ?: nameToId[input.lowercase()]
-        val pokemonId = parsedId ?: if (input.isNotEmpty() && guild != null) GuildEntity.findById(guild.idLong)?.offset else null
+        val pokemonId = parsedId ?: if (input.isNotEmpty() && guild != null) bot.guildEntity(guild).offset else null
 
         if (pokemonId == null)
             return ArgumentParseResult.failure(IllegalArgumentException("Could not find a pokemon with the name or id '$input'. The name/id is either incorrect or was not specified"))

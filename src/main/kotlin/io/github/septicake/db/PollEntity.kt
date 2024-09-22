@@ -17,18 +17,7 @@ object PollTable : IntIdTable("votes") {
     val pokemon = integer("pokeId").index()
     val smashes = long("smashes")
     val passes = long("passes")
-    val result = customEnumeration("result", fromDb = {
-        res -> when(res) {
-            0 -> PollResult.PASSED
-            1 -> PollResult.SMASHED
-            else -> {
-                logger.error("Unexpected result: $res")
-                PollResult.ERROR
-            }
-        }
-    }, toDb = {
-        res: PollResult -> res.value
-    }).index()
+    val result = enumeration<PollResult>("result").index()
 
     val rank = DenseRank().over().orderBy(passes to SortOrder.DESC)
 }

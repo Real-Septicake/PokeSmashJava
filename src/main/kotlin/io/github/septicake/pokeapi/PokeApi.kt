@@ -43,4 +43,8 @@ object PokeApi {
     suspend fun pokemon(name: String): PokemonInfo = request<PokemonInfo>("/pokemon/$name")
 
     suspend fun pokemon(id: Int): PokemonInfo = request<PokemonInfo>("/pokemon/$id")
+
+    suspend fun pokemonColor(pokemonId: Int): PokemonColor = request("/pokemon-color/$pokemonId")
+
+    suspend fun pokemonColor(pokemonName: String): PokemonColor = request("/pokemon-color/$pokemonName")
 }

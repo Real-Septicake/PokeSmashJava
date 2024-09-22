@@ -17,9 +17,6 @@ import io.github.septicake.cloud.annotations.RequireOptions
 import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.cloud.parser.PokemonInfoParser
 import io.github.septicake.cloud.postprocess.ChannelRestrictionPostprocessor
-import io.github.septicake.cloud.postprocess.CommandsEnabledPostprocessor
-import io.github.septicake.cloud.postprocess.GuildOnlyPostprocessor
-import io.github.septicake.cloud.postprocess.UserPermissionPostprocessor
 import io.github.septicake.cloud.preprocess.PokeCommandPreprocessor
 import io.github.septicake.cloud.preprocess.PokemonComponentPreprocessor
 import io.github.septicake.cloud.preprocess.RequireOptionComponentPreprocessor
@@ -46,8 +43,8 @@ import org.incendo.cloud.annotations.AnnotationParser
 import org.incendo.cloud.discord.jda5.JDA5CommandManager
 import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.incendo.cloud.discord.jda5.JDAInteraction.InteractionMapper
-import org.incendo.cloud.discord.jda5.ReplySetting
 import org.incendo.cloud.discord.jda5.annotation.ReplySettingBuilderModifier
+import org.incendo.cloud.discord.slash.CommandScope
 import org.incendo.cloud.discord.slash.annotation.CommandScopeBuilderModifier
 import org.incendo.cloud.execution.ExecutionCoordinator
 import org.incendo.cloud.kotlin.coroutines.annotations.installCoroutineSupport
@@ -89,11 +86,11 @@ class PokeSmashBot(builder: JDABuilder) {
         registerCommandPreProcessor(PokeCommandPreprocessor())
 
         registerCommandPostProcessor(ChannelRestrictionPostprocessor<JDAInteraction>(this@PokeSmashBot))
-        registerCommandPostProcessor(UserPermissionPostprocessor<JDAInteraction>(this@PokeSmashBot))
-        registerCommandPostProcessor(GuildOnlyPostprocessor<JDAInteraction>())
-        registerCommandPostProcessor(CommandsEnabledPostprocessor<JDAInteraction>(this@PokeSmashBot))
+        // registerCommandPostProcessor(UserPermissionPostprocessor<JDAInteraction>(this@PokeSmashBot))
+        // registerCommandPostProcessor(GuildOnlyPostprocessor<JDAInteraction>())
+        // registerCommandPostProcessor(CommandsEnabledPostprocessor<JDAInteraction>(this@PokeSmashBot))
 
-        parserRegistry().registerParser(parserDescriptor(PokemonInfoParser()))
+        parserRegistry().registerParser(parserDescriptor(PokemonInfoParser(this@PokeSmashBot)))
     }
 
     val annotationParser = AnnotationParser(commandManager, JDAInteraction::class.java).apply {
@@ -109,9 +106,9 @@ class PokeSmashBot(builder: JDABuilder) {
         registerBuilderModifier(CommandParams::class.java, PokeMeta::commandParamsModifier)
 
         // by default all commands should be deferred & ephemeral
-        registerBuilderDecorator { builder ->
-            builder.apply(ReplySetting.defer(true))
-        }
+        // registerBuilderDecorator { builder ->
+        //     builder.apply(ReplySetting.defer(true))
+        // }
 
         registerPreprocessorMapper(RequireOptions::class.java) { annotation ->
             RequireOptionComponentPreprocessor(annotation.options)
@@ -151,7 +148,7 @@ class PokeSmashBot(builder: JDABuilder) {
         val hikariConfig = HikariConfig().apply {
             val sqlite = getEnv("SQLITE_ENABLED")
             if (sqlite != null) {
-                jdbcUrl = "jdbc:sqlite:./test.sqlite"
+                jdbcUrl = "jdbc:sqlite:./test.db"
                 driverClassName = "org.sqlite.JDBC"
             } else {
                 val dbHost = getEnv("DB_HOST")
@@ -177,7 +174,10 @@ class PokeSmashBot(builder: JDABuilder) {
             SchemaUtils.create(GuildTable, PokemonTable, PollTable, WhitelistTable)
         }
 
-        commandManager.registerGlobalCommands(jda)
+        jda.updateCommands()
+            .addCommands(commandManager.commandFactory().createCommands(CommandScope.global()))
+            .queue()
+
         jda.awaitReady()
 
         logger.info { "Bot successfully started" }
@@ -190,6 +190,7 @@ class PokeSmashBot(builder: JDABuilder) {
         logger.info { "Shutdown successfully" }
 
         jda.shutdown()
+
         if (!jda.awaitShutdown(10.seconds.toJavaDuration())) {
             jda.shutdownNow()
             jda.awaitShutdown()
@@ -359,9 +360,15 @@ class PokeSmashBot(builder: JDABuilder) {
     fun guildEntity(jdaGuild: Guild) = transaction(db) {
         GuildEntity.findById(jdaGuild.idLong) ?: GuildEntity.new(jdaGuild.idLong) {
             this.name = jdaGuild.name
-            this.channel = null
-            this.polls = polls
         }
+    }
+
+    fun pokemonEntity(pokemonId: Int) = transaction(db) {
+        PokemonEntity.findById(pokemonId) ?: PokemonEntity.new {}
+    }
+
+    fun pollEntity(guildId: Long, pokemonId: Int) = transaction(db) {
+        PollEntity.find { (PollTable.guild eq guildId) and (PollTable.pokemon eq pokemonId) }.singleOrNull()
     }
 
     object PokeSmashThreadFactory : ThreadFactory {
