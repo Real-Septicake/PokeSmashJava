@@ -130,6 +130,8 @@ class PokeSmashBot(builder: JDABuilder) {
     suspend fun start() {
         logger.info { "Starting PokeSmashOrPass bot" }
 
+        loadMap()
+
         ClassGraph()
             .enableAllInfo()
             .acceptPackages("io.github.septicake.commands")
@@ -198,6 +200,18 @@ class PokeSmashBot(builder: JDABuilder) {
 
         if (!isShutdownThread)
             removeShutdownHook()
+    }
+
+    private fun loadMap() {
+        logger.info { "Loading pokemon map" }
+
+        this::class.java.getResourceAsStream("/pokemon_map.txt")!!.bufferedReader().useLines { lines ->
+            lines.withIndex().forEach {
+                map[it.index + 1] = it.value
+            }
+        }
+
+        logger.info { "Pokemon map loaded" }
     }
 
     fun userWhitelisted(guild: Guild, user: Long): Boolean {
