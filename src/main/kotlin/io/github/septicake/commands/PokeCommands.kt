@@ -593,7 +593,10 @@ class PokeCommands(
                 field(name = "Types", value = pokemon.types.joinToString { it.type.name })
                 field() // empty field to keep alignment
 
-                field("Global Votes", value = "${pokemonEntity.smashes} Smashes • ${pokemonEntity.passes} Passes")
+                if(pokemonEntity != null)
+                    field("Global Votes", value = "${pokemonEntity.smashes} Smashes • ${pokemonEntity.passes} Passes")
+                else
+                    field("Global Votes", value = "No polls have been completed for this pokemon")
 
                 if (pollEntity != null)
                     field(name = "Server Votes", value = "${pollEntity.smashes} Smashes • ${pollEntity.passes} Passes")

@@ -1,6 +1,5 @@
 package io.github.septicake
 
-import ca.solostudios.guava.kotlin.collect.get
 import com.google.common.collect.BiMap
 import com.google.common.collect.HashBiMap
 import com.zaxxer.hikari.HikariConfig
@@ -226,17 +225,8 @@ class PokeSmashBot(builder: JDABuilder) {
     }
 
     fun setPollResults(guildId: Long, pokemonId: Int, smashVotes: Long, passVotes: Long) {
-        val exists = transaction(db) {
-            !PollTable.selectAll()
-                .where { PollTable.guild eq guildId and (PollTable.pokemon eq pokemonId) }
-                .empty()
-        }
-        if(exists) {
-            val poll = transaction(db) {
-                PollEntity.find {
-                    PollTable.guild eq guildId and (PollTable.pokemon eq pokemonId)
-                }[0]
-            }
+        val poll = pollEntity(guildId, pokemonId)
+        if(poll != null) {
             val guildInfo = transaction(db) {
                 GuildEntity.findById(guildId)
             }!!
@@ -331,39 +321,30 @@ class PokeSmashBot(builder: JDABuilder) {
             GuildEntity.findById(guildId)
         } ?: throw ServerNotPopulatedException()
 
-        val exists = transaction(db) {
-            !PollTable.selectAll()
-                .where { PollTable.guild eq guildId and (PollTable.pokemon eq pokemonId) }
-                .empty()
-        }
-        if(exists) {
-            val poll = transaction(db) {
-                PollEntity.find {
-                    PollTable.guild eq guildId and (PollTable.pokemon eq pokemonId)
-                }[0]
-            }
-            val pokemonInfo = transaction(db) {
-                PokemonEntity.findById(pokemonId)
-            }!!
 
-            if(poll.result == PollResult.SMASHED) {
-                transaction(db) {
-                    guildInfo.smashes -= 1
-                    pokemonInfo.smashWins -= 1
-                }
-            } else {
-                transaction(db) {
-                    guildInfo.passes -= 1
-                    pokemonInfo.passWins -= 1
-                }
-            }
+        val poll = pollEntity(guildId, pokemonId) ?: throw PollDoesNotExistException()
+
+        val pokemonInfo = transaction(db) {
+            PokemonEntity.findById(pokemonId)
+        }!!
+
+        if(poll.result == PollResult.SMASHED) {
             transaction(db) {
-                pokemonInfo.smashes -= poll.smashes
-                pokemonInfo.passes -= poll.passes
-                poll.delete()
+                guildInfo.smashes -= 1
+                pokemonInfo.smashWins -= 1
             }
-        } else
-            throw PollDoesNotExistException()
+        } else {
+            transaction(db) {
+                guildInfo.passes -= 1
+                pokemonInfo.passWins -= 1
+            }
+        }
+        transaction(db) {
+            pokemonInfo.smashes -= poll.smashes
+            pokemonInfo.passes -= poll.passes
+            poll.delete()
+        }
+
     }
 
     fun userServerWhitelisted(guild: Long, user: Long): Boolean {
@@ -381,7 +362,7 @@ class PokeSmashBot(builder: JDABuilder) {
     }
 
     fun pokemonEntity(pokemonId: Int) = transaction(db) {
-        PokemonEntity.findById(pokemonId) ?: PokemonEntity.new(pokemonId) {}
+        PokemonEntity.findById(pokemonId)
     }
 
     fun pollEntity(guildId: Long, pokemonId: Int) = transaction(db) {
