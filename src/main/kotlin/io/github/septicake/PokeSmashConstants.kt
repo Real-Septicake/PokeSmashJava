@@ -1,11 +1,9 @@
 package io.github.septicake
 
-object PokeSmashConstants {
-    val ownerId = 687780591818899515
+import io.github.septicake.util.getEnv
 
-    val whitelist = longArrayOf(
-        687780591818899515,
-        734183824950427690,
-        400477735811809284
-    )
+object PokeSmashConstants {
+    val ownerId = getEnv("BOT_OWNER")!!.toLong()
+
+    val whitelist = getEnv("BOT_WHITELIST")!!.split(";").map { s -> s.toLong() }
 }
