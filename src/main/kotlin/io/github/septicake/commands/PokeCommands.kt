@@ -1,11 +1,7 @@
 package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
-import io.github.septicake.cloud.annotations.CommandName
-import io.github.septicake.cloud.annotations.CommandsEnabled
-import io.github.septicake.cloud.annotations.Pokemon
-import io.github.septicake.cloud.annotations.RequireOptions
-import io.github.septicake.cloud.annotations.UserPermissions
+import io.github.septicake.cloud.annotations.*
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.PollResult
 import io.github.septicake.db.PollTable
@@ -21,18 +17,19 @@ import net.dv8tion.jda.api.utils.messages.MessagePollData
 import org.incendo.cloud.annotations.Argument
 import org.incendo.cloud.annotations.Command
 import org.incendo.cloud.discord.jda5.JDAInteraction
-import org.incendo.cloud.discord.slash.annotation.CommandScope
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import kotlin.math.min
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.toJavaDuration
 
 class PokeCommands(
     private val bot: PokeSmashBot
 ) {
 
     @Command("reset")
-    @CommandScope(guilds = [-1])
+    @GuildOnly
     @UserPermissions(whitelistOnly = true)
     @CommandName("Reset")
     fun resetCommand(
@@ -52,7 +49,7 @@ class PokeCommands(
     }
 
     @Command("next")
-    @CommandScope(guilds = [-1])
+    @GuildOnly
     @UserPermissions(whitelistOnly = true)
     @CommandsEnabled
     @CommandName("Next")
@@ -74,6 +71,7 @@ class PokeCommands(
                         MessagePollData.builder(pokemon.name.replaceFirstChar { it.titlecase() })
                             .addAnswer("Smash")
                             .addAnswer("Pass")
+                            .setDuration(1.hours.toJavaDuration())
                             .build()
                     ).complete().createThreadChannel(pokemon.name.replaceFirstChar { it.titlecase() }).complete()
                         .sendMessage(pokemon.fetchInfo().sprites["front_default"].toString().dropLast(1).drop(1))
@@ -199,7 +197,7 @@ class PokeCommands(
         }
     }
 
-    @CommandScope(guilds = [-1])
+    @GuildOnly
     @Command("smash server totals <info> <format>")
     fun smashServerTotalCommand(
         interaction: JDAInteraction,
@@ -252,7 +250,7 @@ class PokeCommands(
         }
     }
 
-    @CommandScope(guilds = [-1])
+    @GuildOnly
     @Command("smash server pokemon <info> <format> <pokemon>")
     fun smashServerPokemonCommand(
         interaction: JDAInteraction,
@@ -368,7 +366,7 @@ class PokeCommands(
         }
     }
 
-    @CommandScope(guilds = [-1])
+    @GuildOnly
     @Command("pass server totals <info> <format>")
     fun passServerTotalCommand(
         interaction: JDAInteraction,
@@ -488,7 +486,7 @@ class PokeCommands(
         }
     }
 
-    @CommandScope(guilds = [-1])
+    @GuildOnly
     @Command("pass server pokemon <info> <format> <pokemon>")
     fun passServerPokemonCommand(
         interaction: JDAInteraction,
@@ -559,7 +557,7 @@ class PokeCommands(
         }
     }
 
-    @CommandScope(guilds = [-1])
+    @GuildOnly
     @Command("pokemon info <pokemon>")
     suspend fun pokemonInfoCommand(
         interaction: JDAInteraction,
@@ -571,13 +569,15 @@ class PokeCommands(
     ) {
         val event = interaction.interactionEvent() ?: error("The interaction event should never be null")
 
+        event.deferReply().queue()
+
         val jdaGuild = interaction.guild() ?: error("The guild should never be null")
         val pokemonEntity = bot.pokemonEntity(pokemon.id)
         val pollEntity = bot.pollEntity(jdaGuild.idLong, pokemon.id)
 
         event.hook.sendMessage {
             embed {
-                title = pokemon.name
+                title = pokemon.name.replaceFirstChar { it.titlecase() }
                 color = PokeApi.pokemonColor(pokemon.id).colorFromName()
                 url = "https://pokemondb.net/pokedex/%04d".format(pokemon.id)
                 // description = // TODO: Find some reasonable way to get a description
@@ -589,8 +589,8 @@ class PokeCommands(
                 field(name = "Name", value = pokemon.name)
                 field(name = "Height", value = "${pokemon.height * 10}cm") // height is in decimeters (why)
                 field(name = "Weight", value = "%.1fkg".format(pokemon.weight / 10.0)) // weight is in hectograms (why)
-                field(name = "Species", value = pokemon.species.name)
-                field(name = "Types", value = pokemon.types.joinToString { it.type.name })
+                field(name = "Species", value = pokemon.species.name.replaceFirstChar { it.titlecase() })
+                field(name = "Types", value = pokemon.types.joinToString(separator = " & ") { type -> type.type.name.replaceFirstChar { it.titlecase() } })
                 field() // empty field to keep alignment
 
                 if(pokemonEntity != null)
@@ -604,10 +604,9 @@ class PokeCommands(
                     field() // empty field to keep alignment
 
                 footer {
-                    name = "Info for ${pokemon.name}"
+                    name = "Info for ${pokemon.name.replaceFirstChar { it.titlecase() }}"
                 }
             }
-
         }
     }
 }
