@@ -43,10 +43,11 @@ class CountCommands(
         interaction: JDAInteraction
     ) {
         val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
         val info = transaction(bot.db) {
             GuildEntity.findById(event.guild!!.idLong)
         }
-        if(info != null) event.reply("Current poll count is `${info.polls}`").queue()
+        if(info != null) event.hook.sendMessage("Current poll count is `${info.polls}`")
         else event.reply("Server has not yet been populated").queue()
     }
 }
