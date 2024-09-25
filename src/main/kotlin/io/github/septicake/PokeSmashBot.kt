@@ -16,6 +16,9 @@ import io.github.septicake.cloud.annotations.RequireOptions
 import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.cloud.parser.PokemonInfoParser
 import io.github.septicake.cloud.postprocess.ChannelRestrictionPostprocessor
+import io.github.septicake.cloud.postprocess.CommandsEnabledPostprocessor
+import io.github.septicake.cloud.postprocess.GuildOnlyPostprocessor
+import io.github.septicake.cloud.postprocess.UserPermissionPostprocessor
 import io.github.septicake.cloud.preprocess.PokeCommandPreprocessor
 import io.github.septicake.cloud.preprocess.PokemonComponentPreprocessor
 import io.github.septicake.cloud.preprocess.RequireOptionComponentPreprocessor
@@ -27,6 +30,7 @@ import io.github.septicake.db.PollEntity
 import io.github.septicake.db.PollResult
 import io.github.septicake.db.PollTable
 import io.github.septicake.db.WhitelistTable
+import io.github.septicake.listeners.MessageUpdateListener
 import io.github.septicake.util.ScheduledThreadPool
 import io.github.septicake.util.currentThread
 import io.github.septicake.util.getEnv
@@ -85,9 +89,9 @@ class PokeSmashBot(builder: JDABuilder) {
         registerCommandPreProcessor(PokeCommandPreprocessor())
 
         registerCommandPostProcessor(ChannelRestrictionPostprocessor<JDAInteraction>(this@PokeSmashBot))
-        // registerCommandPostProcessor(UserPermissionPostprocessor<JDAInteraction>(this@PokeSmashBot))
-        // registerCommandPostProcessor(GuildOnlyPostprocessor<JDAInteraction>())
-        // registerCommandPostProcessor(CommandsEnabledPostprocessor<JDAInteraction>(this@PokeSmashBot))
+         registerCommandPostProcessor(UserPermissionPostprocessor<JDAInteraction>(this@PokeSmashBot))
+         registerCommandPostProcessor(GuildOnlyPostprocessor<JDAInteraction>())
+         registerCommandPostProcessor(CommandsEnabledPostprocessor<JDAInteraction>(this@PokeSmashBot))
 
         parserRegistry().registerParser(parserDescriptor(PokemonInfoParser(this@PokeSmashBot)))
     }
@@ -119,6 +123,7 @@ class PokeSmashBot(builder: JDABuilder) {
 
     val jda = builder.apply {
         addEventListeners(commandManager.createListener())
+        addEventListeners(MessageUpdateListener(this@PokeSmashBot))
     }.build()
 
     lateinit var db: Database

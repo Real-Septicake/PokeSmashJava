@@ -27,7 +27,7 @@ fun main() {
 
             intents += listOf(
                 GatewayIntent.GUILD_MESSAGES,
-                // GatewayIntent.MESSAGE_CONTENT,
+                GatewayIntent.MESSAGE_CONTENT,
                 GatewayIntent.GUILD_MESSAGE_POLLS,
             )
 
