@@ -21,8 +21,6 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import kotlin.math.min
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.toJavaDuration
 
 class PokeCommands(
     private val bot: PokeSmashBot
@@ -71,7 +69,6 @@ class PokeCommands(
                         MessagePollData.builder(pokemon.name.replaceFirstChar { it.titlecase() })
                             .addAnswer("Smash")
                             .addAnswer("Pass")
-                            .setDuration(1.hours.toJavaDuration())
                             .build()
                     ).complete().createThreadChannel(pokemon.name.replaceFirstChar { it.titlecase() }).complete()
                         .sendMessage(pokemon.fetchInfo().sprites["front_default"].toString().dropLast(1).drop(1))
