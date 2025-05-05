@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
@@ -7,12 +9,15 @@ import io.github.septicake.cloud.annotations.CommandParams
 import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.GuildTable
+import io.github.septicake.db.logger
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException
 import org.incendo.cloud.annotation.specifier.Greedy
 import org.incendo.cloud.annotations.Argument
 import org.incendo.cloud.annotations.Command
 import org.incendo.cloud.annotations.CommandDescription
 import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.slf4j.kotlin.error
 
 class DevCommands(
     private val bot : PokeSmashBot
@@ -95,12 +100,16 @@ class DevCommands(
                     return@forEach
                 }
 
-                if(format){
-                    val guild = bot.jda.getGuildById(it[GuildTable.id].value)!!
-                    val formattedStr = msg.replace("%owner%", "<@${guild.ownerId}>")
-                    bot.jda.getTextChannelById(it[GuildTable.channel]!!)!!.sendMessage(formattedStr).queue()
-                } else
-                    bot.jda.getTextChannelById(it[GuildTable.channel]!!)!!.sendMessage(msg).queue()
+                try {
+                    if(format){
+                        val guild = bot.jda.getGuildById(it[GuildTable.id].value)!!
+                        val formattedStr = msg.replace("%owner%", "<@${guild.ownerId}>")
+                        bot.jda.getTextChannelById(it[GuildTable.channel]!!)!!.sendMessage(formattedStr).queue()
+                    } else
+                        bot.jda.getTextChannelById(it[GuildTable.channel]!!)!!.sendMessage(msg).queue()
+                } catch (e: InsufficientPermissionException) {
+                    logger.error { "Could not send message to ${it[GuildTable.name]}, lacking permissions" }
+                }
 
                 sent++
             }
@@ -129,7 +138,12 @@ class DevCommands(
                         return@forEach
                     }
 
-                    bot.jda.getTextChannelById(it[GuildTable.channel]!!)!!.sendMessage("Bot shutting down...").queue()
+                    try {
+                        bot.jda.getTextChannelById(it[GuildTable.channel]!!)!!.sendMessage("Bot shutting down...")
+                            .queue()
+                    } catch (e: InsufficientPermissionException) {
+                        logger.error { "Could not send message to ${it[GuildTable.name]}, lacking permissions" }
+                    }
                 }
             }
         }

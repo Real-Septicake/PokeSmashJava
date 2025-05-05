@@ -1,6 +1,7 @@
 package io.github.septicake.listeners
 
 import io.github.septicake.PokeSmashBot
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.slf4j.kotlin.getLogger
@@ -28,5 +29,14 @@ class MessageUpdateListener(
         else {
             logger.info { "Test poll results: id-${bot.map.inverse()[poll!!.question.text.lowercase()]!!}, smashes-${poll.answers[0].votes}, passes-${poll.answers[1].votes.toLong()}" }
         }
+    }
+
+    override fun onMessageReceived(event: MessageReceivedEvent) {
+        logger.info { "Message get" }
+        if(bot.jda.selfUser.idLong != event.author.idLong) return
+
+        val poll = event.message.poll ?: return
+
+        poll.timeExpiresAt!!.toLocalDateTime()
     }
 }

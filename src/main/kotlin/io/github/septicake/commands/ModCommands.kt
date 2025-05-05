@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot

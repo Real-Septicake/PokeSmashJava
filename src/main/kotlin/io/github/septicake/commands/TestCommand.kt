@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
@@ -10,8 +12,7 @@ class TestCommand(
 ) {
     private val logger by getLogger()
 
-    // @CommandScope(guilds = [-1])
-    @Command("test <pokemon>")
+    @Command("test")
     suspend fun testCommand(
         interaction: JDAInteraction
     ) {

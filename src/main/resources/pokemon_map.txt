@@ -913,7 +913,7 @@ quaxly
 quaxwell
 quaquaval
 lechonk
-oinkologne
+oinkologne-male
 tarountula
 spidops
 nymble
@@ -922,13 +922,13 @@ pawmi
 pawmo
 pawmot
 tandemaus
-maushold
+maushold-family-of-four
 fidough
 dachsbun
 smoliv
 dolliv
 arboliva
-squawkabilly
+squawkabilly-green-plumage
 nacli
 naclstack
 garganacl
@@ -961,7 +961,7 @@ wiglett
 wugtrio
 bombirdier
 finizen
-palafin
+palafin-zero
 varoom
 revavroom
 cyclizar
@@ -975,11 +975,11 @@ cetoddle
 cetitan
 veluza
 dondozo
-tatsugiri
+tatsugiri-curly
 annihilape
 clodsire
 farigiraf
-dudunsparce
+dudunsparce-two-segment
 kingambit
 great-tusk
 scream-tail

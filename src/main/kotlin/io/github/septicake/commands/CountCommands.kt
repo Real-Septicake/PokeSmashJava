@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
@@ -11,10 +13,13 @@ import org.incendo.cloud.annotations.Argument
 import org.incendo.cloud.annotations.Command
 import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.slf4j.kotlin.debug
+import org.slf4j.kotlin.getLogger
 
 class CountCommands(
     private val bot: PokeSmashBot,
 ) {
+    private val logger by getLogger()
 
     @GuildOnly
     @UserPermissions(whitelistOnly = true)
@@ -28,13 +33,15 @@ class CountCommands(
         count: Int
     ) {
         val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+        logger.debug { "Set count called with value $count in ${event.guild}" }
         val info = transaction(bot.db) {
             GuildEntity.findById(event.guild!!.idLong)
         }
         if(info != null){
             transaction(bot.db) { info.polls = count }
-            event.reply("Count successfully set to `$count`").queue()
-        } else { event.reply("Server has not yet been populated").queue() }
+            event.hook.sendMessage("Count successfully set to `$count`").queue()
+        } else { event.hook.sendMessage("Server has not yet been populated").queue() }
     }
 
     @GuildOnly
@@ -44,10 +51,11 @@ class CountCommands(
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
+        logger.debug { "Count called from ${event.guild}" }
         val info = transaction(bot.db) {
             GuildEntity.findById(event.guild!!.idLong)
         }
         if(info != null) event.hook.sendMessage("Current poll count is `${info.polls}`")
-        else event.reply("Server has not yet been populated").queue()
+        else event.hook.sendMessage("Server has not yet been populated").queue()
     }
 }

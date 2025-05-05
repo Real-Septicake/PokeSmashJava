@@ -22,14 +22,8 @@ import io.github.septicake.cloud.postprocess.UserPermissionPostprocessor
 import io.github.septicake.cloud.preprocess.PokeCommandPreprocessor
 import io.github.septicake.cloud.preprocess.PokemonComponentPreprocessor
 import io.github.septicake.cloud.preprocess.RequireOptionComponentPreprocessor
-import io.github.septicake.db.GuildEntity
-import io.github.septicake.db.GuildTable
-import io.github.septicake.db.PokemonEntity
-import io.github.septicake.db.PokemonTable
-import io.github.septicake.db.PollEntity
-import io.github.septicake.db.PollResult
-import io.github.septicake.db.PollTable
-import io.github.septicake.db.WhitelistTable
+import io.github.septicake.db.*
+import io.github.septicake.jobs.PollCheck
 import io.github.septicake.listeners.MessageUpdateListener
 import io.github.septicake.util.ScheduledThreadPool
 import io.github.septicake.util.currentThread
@@ -91,9 +85,9 @@ class PokeSmashBot(builder: JDABuilder) {
         registerCommandPreProcessor(PokeCommandPreprocessor())
 
         registerCommandPostProcessor(ChannelRestrictionPostprocessor<JDAInteraction>(this@PokeSmashBot))
-         registerCommandPostProcessor(UserPermissionPostprocessor<JDAInteraction>(this@PokeSmashBot))
-         registerCommandPostProcessor(GuildOnlyPostprocessor<JDAInteraction>())
-         registerCommandPostProcessor(CommandsEnabledPostprocessor<JDAInteraction>(this@PokeSmashBot))
+        registerCommandPostProcessor(UserPermissionPostprocessor<JDAInteraction>(this@PokeSmashBot))
+        registerCommandPostProcessor(GuildOnlyPostprocessor<JDAInteraction>())
+        registerCommandPostProcessor(CommandsEnabledPostprocessor<JDAInteraction>(this@PokeSmashBot))
 
         parserRegistry().registerParser(parserDescriptor(PokemonInfoParser(this@PokeSmashBot)))
     }
@@ -181,7 +175,7 @@ class PokeSmashBot(builder: JDABuilder) {
         db = Database.connect(datasource = hikari, databaseConfig = dbConfig)
 
         transaction(db) {
-            SchemaUtils.create(GuildTable, PokemonTable, PollTable, WhitelistTable)
+            SchemaUtils.create(GuildTable, PokemonTable, PollTable, WhitelistTable, PollEndTable)
         }
 
         jda.updateCommands()
@@ -252,7 +246,7 @@ class PokeSmashBot(builder: JDABuilder) {
 
     fun setPollResults(guildId: Long, pokemonId: Int, smashVotes: Long, passVotes: Long) {
         val poll = pollEntity(guildId, pokemonId)
-        if(poll != null) {
+        if (poll != null) {
             val guildInfo = transaction(db) {
                 GuildEntity.findById(guildId)
             }!!
@@ -262,7 +256,7 @@ class PokeSmashBot(builder: JDABuilder) {
             val prevResult = poll.result
 
             // Remove results from previous poll
-            if(prevResult == PollResult.SMASHED) {
+            if (prevResult == PollResult.SMASHED) {
                 transaction(db) {
                     guildInfo.smashes -= 1
                     pokemonInfo.smashWins -= 1
@@ -279,8 +273,8 @@ class PokeSmashBot(builder: JDABuilder) {
                 pokemonInfo.passes -= poll.passes
             }
 
-            val newResult = if(passVotes >= smashVotes) PollResult.PASSED else PollResult.SMASHED
-            if(newResult == PollResult.SMASHED) {
+            val newResult = if (passVotes >= smashVotes) PollResult.PASSED else PollResult.SMASHED
+            if (newResult == PollResult.SMASHED) {
                 transaction(db) {
                     guildInfo.smashes += 1
                     pokemonInfo.smashWins += 1
@@ -313,8 +307,8 @@ class PokeSmashBot(builder: JDABuilder) {
                         passes = 0
                     }
             }
-            val result = if(passVotes >= smashVotes) PollResult.PASSED else PollResult.SMASHED
-            if(result == PollResult.SMASHED) {
+            val result = if (passVotes >= smashVotes) PollResult.PASSED else PollResult.SMASHED
+            if (result == PollResult.SMASHED) {
                 transaction(db) {
                     pokemonInfo.smashWins += 1
                     guildInfo.smashes += 1
@@ -354,7 +348,7 @@ class PokeSmashBot(builder: JDABuilder) {
             PokemonEntity.findById(pokemonId)
         }!!
 
-        if(poll.result == PollResult.SMASHED) {
+        if (poll.result == PollResult.SMASHED) {
             transaction(db) {
                 guildInfo.smashes -= 1
                 pokemonInfo.smashWins -= 1
@@ -399,7 +393,8 @@ class PokeSmashBot(builder: JDABuilder) {
         private val threadGroup: ThreadGroup = currentThread.threadGroup
         private var threadCount: Int = 0
 
-        override fun newThread(runnable: Runnable): Thread = Thread(threadGroup, runnable, "PokeSmash-Worker-${threadCount++}", 0)
+        override fun newThread(runnable: Runnable): Thread =
+            Thread(threadGroup, runnable, "PokeSmash-Worker-${threadCount++}", 0)
     }
 
     class ServerNotPopulatedException : IllegalStateException()

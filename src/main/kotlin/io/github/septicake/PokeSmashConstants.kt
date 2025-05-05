@@ -6,4 +6,6 @@ object PokeSmashConstants {
     val ownerId = getEnv("BOT_OWNER")!!.toLong()
 
     val whitelist = getEnv("BOT_WHITELIST")!!.split(";").map { s -> s.toLong() }
+
+    val PollCheckIdentity = "PollCheck"
 }

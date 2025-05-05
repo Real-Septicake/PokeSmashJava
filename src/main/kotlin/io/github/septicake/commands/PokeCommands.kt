@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
@@ -71,7 +73,7 @@ class PokeCommands(
                             .addAnswer("Pass")
                             .build()
                     ).complete().createThreadChannel(pokemon.name.replaceFirstChar { it.titlecase() }).complete()
-                        .sendMessage(pokemon.fetchInfo().sprites["front_default"].toString().dropLast(1).drop(1))
+                        .sendMessage(pokemon.fetchInfo().sprites["front_default"]!!.jsonPrimitive.content)
                         .queue()
                 }
                 event.hook.sendMessage("Next `$count` pokemon sent").queue()

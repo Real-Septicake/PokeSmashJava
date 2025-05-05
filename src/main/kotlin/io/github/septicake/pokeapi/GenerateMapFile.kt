@@ -16,7 +16,14 @@ suspend fun main() {
     val pokemonMap = Path("src/main/resources/pokemon_map.txt")
 
     pokemonMap.bufferedWriter().use { writer ->
-        PokeApi.listPokemon().flowOn(Dispatchers.IO).map { it.fetchInfo() }.filterNot { it.id > 10_000 }.collect { info ->
+        PokeApi.listPokemon().flowOn(Dispatchers.IO).map { it.fetchInfo() }.filterNot {
+            if (it.id > 10_000) {
+                logger.info { "Filtered '${it.name}' (${it.id})" }
+                return@filterNot true
+            }
+            return@filterNot false
+
+        }.collect { info ->
             withContext(Dispatchers.IO) {
 
                 if (info.id % 100 == 0)
