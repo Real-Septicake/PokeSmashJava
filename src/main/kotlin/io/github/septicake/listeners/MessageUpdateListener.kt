@@ -21,7 +21,7 @@ class MessageUpdateListener(
             poll == null || !poll.isFinalizedVotes -> return
         }
 
-        if(event.channel.id != bot.testingChannel)
+        if(event.channel.idLong != bot.testingChannel)
             bot.setPollResults(event.guild.idLong,
                 bot.map.inverse()[poll!!.question.text.lowercase()]!!,
                 poll.answers[0].votes.toLong(),

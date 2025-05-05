@@ -70,9 +70,9 @@ class PokeSmashBot(builder: JDABuilder) {
 
     val scope = CoroutineScope(SupervisorJob() + coroutineDispatcher)
 
-    val homeServer = getEnv("HOME_SERVER")
-    val testingChannel = getEnv("TESTING_CHANNEL")
-    val replyChannel = getEnv("REPLY_CHANNEL")
+    val homeServer = getEnv("HOME_SERVER")?.toLong()
+    val testingChannel = getEnv("TESTING_CHANNEL")?.toLong()
+    val replyChannel = getEnv("REPLY_CHANNEL")?.toLong()
 
     var commandsEnabled = true
 

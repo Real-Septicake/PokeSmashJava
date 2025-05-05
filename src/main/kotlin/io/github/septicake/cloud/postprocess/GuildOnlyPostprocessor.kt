@@ -15,7 +15,7 @@ class GuildOnlyPostprocessor<C> : CommandPostprocessor<C> {
 
         if(commandMeta.getOrDefault(PokeMeta.GUILDS_ONLY, false)) {
             if(interaction.guild == null) {
-                interaction.reply("Command must be used in a guild.").queue()
+                interaction.reply("Command must be used in a guild.").setEphemeral(true).queue()
                 ConsumerService.interrupt()
             }
         }

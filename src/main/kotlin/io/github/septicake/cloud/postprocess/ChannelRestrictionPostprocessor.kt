@@ -27,22 +27,22 @@ class ChannelRestrictionPostprocessor<C>(
                 GuildEntity.findById(guild.idLong)
             }
             if(info == null) {
-                interaction.reply("Server has not yet been populated.").queue()
+                interaction.reply("Server has not yet been populated.").setEphemeral(true).queue()
                 ConsumerService.interrupt()
             }
             if(info!!.channel == null) {
-                interaction.reply("Server has not yet had a channel set.").queue()
+                interaction.reply("Server has not yet had a channel set.").setEphemeral(true).queue()
                 ConsumerService.interrupt()
             }
             if(channel.idLong != info.channel) {
                 val jda = context.get<JDA>("JDA")
-                interaction.reply("Command cannot be used outside " + jda.getTextChannelById(info.channel!!).toString()).queue()
+                interaction.reply("Command cannot be used outside " + jda.getTextChannelById(info.channel!!).toString()).setEphemeral(true).queue()
                 ConsumerService.interrupt()
             }
         } else if(commandMeta.getOrDefault(PokeMeta.DEV_CHANNEL_ONLY, false)) {
             val channel = context.get<Channel>("InteractionChannel")
             if(channel.idLong != bot.testingChannel!!.toLong()) {
-                interaction.reply("Command cannot be used outside dev channel.").queue()
+                interaction.reply("Command cannot be used outside dev channel.").setEphemeral(true).queue()
                 ConsumerService.interrupt()
             }
         }

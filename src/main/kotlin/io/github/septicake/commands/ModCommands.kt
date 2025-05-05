@@ -33,7 +33,7 @@ class ModCommands(
         user: User
     ) {
         val event = interaction.interactionEvent() ?: return
-        event.deferReply().queue()
+        event.deferReply().setEphemeral(true).queue()
         if(bot.userServerWhitelisted(event.guild!!.idLong, user.idLong)) {
             event.hook.sendMessage("<@${user.id}> is already whitelisted.").mention().queue()
             return
@@ -57,7 +57,7 @@ class ModCommands(
         user: User
     ) {
         val event = interaction.interactionEvent() ?: return
-        event.deferReply().queue()
+        event.deferReply().setEphemeral(true).queue()
         if(!bot.userServerWhitelisted(event.guild!!.idLong, user.idLong)) {
             event.hook.sendMessage("<@${user.id}> is not whitelisted.").mention().queue()
             return
@@ -80,7 +80,7 @@ class ModCommands(
         channel: Channel
     ) {
         val event = interaction.interactionEvent() ?: return
-        event.deferReply().queue()
+        event.deferReply().setEphemeral(true).queue()
         if(channel is MessageChannel) {
             val info = transaction(bot.db) {
                 GuildEntity.findById(event.guild!!.idLong)
@@ -113,7 +113,7 @@ class ModCommands(
         polls: Int = 5
     ) {
         val event = interaction.interactionEvent() ?: return
-        event.deferReply().queue()
+        event.deferReply().setEphemeral(true).queue()
         val info = transaction(bot.db) {
             GuildEntity.findById(interaction.guild()!!.idLong)
         }
@@ -170,7 +170,7 @@ class ModCommands(
         passes: Long
     ) {
         val event = interaction.interactionEvent() ?: return
-        event.deferReply().queue()
+        event.deferReply().setEphemeral(true).queue()
         val pokemonId = pokemon.toIntOrNull() ?: bot.map.inverse()[pokemon.lowercase()]!!
         try {
             bot.setPollResults(event.guild!!.idLong, pokemonId, smashes, passes)
@@ -191,7 +191,7 @@ class ModCommands(
         pokemon: String
     ) {
         val event = interaction.interactionEvent() ?: return
-        event.deferReply().queue()
+        event.deferReply().setEphemeral(true).queue()
         val pokemonId = pokemon.toIntOrNull() ?: bot.map.inverse()[pokemon.lowercase()]!!
         try {
             bot.removePollResults(event.guild!!.idLong, pokemonId)

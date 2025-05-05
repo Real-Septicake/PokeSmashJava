@@ -37,14 +37,14 @@ class UserPermissionPostprocessor<C>(
             logger.debug { "guild owner only" }
             val guild = context.get<Guild>("Guild")
             if(interaction.user.idLong != guild.ownerIdLong && interaction.user.idLong != PokeSmashConstants.ownerId) {
-                interaction.reply("Command can only be used by server owner.").queue()
+                interaction.reply("Command can only be used by server owner.").setEphemeral(true).queue()
                 logFailedUse(commandMeta, context, interaction)
                 ConsumerService.interrupt()
             }
         } else if(commandMeta.getOrDefault(PokeMeta.BOT_OWNER_ONLY, false)) {
             logger.debug { "bot owner only" }
             if(PokeSmashConstants.ownerId != interaction.user.idLong) {
-                interaction.reply("Only the bot owner can use this command.").queue()
+                interaction.reply("Only the bot owner can use this command.").setEphemeral(true).queue()
                 logFailedUse(commandMeta, context, interaction)
                 ConsumerService.interrupt()
             }

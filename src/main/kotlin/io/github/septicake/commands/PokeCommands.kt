@@ -585,7 +585,7 @@ class PokeCommands(
 
                 timestamp = Clock.System.now().toJavaInstant()
 
-                field(name = "Name", value = pokemon.name)
+                field(name = "Name", value = pokemon.name.replaceFirstChar { it.titlecase() })
                 field(name = "Height", value = "${pokemon.height * 10}cm") // height is in decimeters (why)
                 field(name = "Weight", value = "%.1fkg".format(pokemon.weight / 10.0)) // weight is in hectograms (why)
                 field(name = "Species", value = pokemon.species.name.replaceFirstChar { it.titlecase() })
