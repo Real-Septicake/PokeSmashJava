@@ -37,11 +37,11 @@ class DevCommands(
         event.reply("Commands ${if(value) "enabled" else "disabled"}.").queue()
     }
 
-    @Command("message <server> <msg>")
+    @Command("msg <server> <msg>")
     @CommandDescription("Send a message to a server's channel.")
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
-    @CommandName("Message")
+    @CommandName("Msg")
     @CommandParams("server", "msg")
     fun messageCommand(
         interaction: JDAInteraction,

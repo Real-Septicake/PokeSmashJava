@@ -2,11 +2,14 @@
 
 package io.github.septicake.commands
 
+import dev.minn.jda.ktx.messages.MessageCreate
 import io.github.septicake.PokeSmashBot
 import io.github.septicake.cloud.annotations.*
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.WhitelistEntity
 import io.github.septicake.db.WhitelistTable
+import kotlinx.datetime.Clock
+import kotlinx.datetime.toJavaInstant
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.Channel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
@@ -138,24 +141,6 @@ class ModCommands(
     }
 
     @GuildOnly
-    @UserPermissions(whitelistOnly = true)
-    @Command("reply <msg>")
-    @CommandName("Reply")
-    fun replyCommand(
-        interaction: JDAInteraction,
-        @Argument("msg")
-        @Greedy
-        msg: String
-    ) {
-        val event = interaction.interactionEvent() ?: return
-        event.deferReply().queue()
-        bot.jda.getTextChannelById(bot.replyChannel!!.toLong())!!.sendMessage(
-            "User `${event.user.name}` from server `${event.guild!!.name}` sent: $msg"
-        ).queue()
-        event.hook.sendMessage("Message sent.").queue()
-    }
-
-    @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("set poll <pokemon> <smashes> <passes>")
     @CommandName("Set Poll")
@@ -201,5 +186,30 @@ class ModCommands(
         } catch(e: PokeSmashBot.PollDoesNotExistException) {
             event.hook.sendMessage("Poll does not exist.").queue()
         }
+    }
+
+    @GuildOnly
+    @UserPermissions(guildOwnerOnly = true)
+    @Command("message <text>")
+    @CommandName("Message")
+    fun messageCommand(
+        interaction: JDAInteraction,
+        @Argument("text")
+        @Greedy
+        text: String
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        val guild = event.guild!!
+        event.deferReply().setEphemeral(true).queue()
+        bot.jda.getTextChannelById(bot.replyChannel!!)!!.sendMessage(MessageCreate {
+            embed {
+                title = "Message from ${interaction.user().effectiveName}"
+                description = text
+                timestamp = Clock.System.now().toJavaInstant()
+                field("From", interaction.user().name)
+                field("Server", guild.name)
+            }
+        }).queue()
+        event.hook.sendMessage("Message sent").queue()
     }
 }
