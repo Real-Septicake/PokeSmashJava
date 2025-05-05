@@ -58,6 +58,8 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.quartz.*
+import org.quartz.impl.StdSchedulerFactory
 import org.slf4j.kotlin.getLogger
 import org.slf4j.kotlin.info
 import java.util.concurrent.ThreadFactory
@@ -131,6 +133,8 @@ class PokeSmashBot(builder: JDABuilder) {
 
     var shutdown: Boolean = false
 
+    lateinit var scheduler: Scheduler
+
     suspend fun start() {
         logger.info { "Starting PokeSmashOrPass bot" }
 
@@ -187,12 +191,29 @@ class PokeSmashBot(builder: JDABuilder) {
         jda.awaitReady()
 
         logger.info { "Bot successfully started" }
+
+        val job = JobBuilder.newJob(PollCheck::class.java).withIdentity(PokeSmashConstants.PollCheckIdentity).build()
+
+        val trigger = TriggerBuilder.newTrigger()
+            .withIdentity("PollTrigger")
+            .startNow()
+            .withSchedule(CronScheduleBuilder.cronSchedule("0 0 * * * ?"))
+            .forJob(PokeSmashConstants.PollCheckIdentity)
+            .build()
+
+        val sf = StdSchedulerFactory()
+        scheduler = sf.getScheduler()
+
+        scheduler.scheduleJob(job, trigger)
+
+        scheduler.start()
     }
 
     suspend fun shutdown(isShutdownThread: Boolean = false) {
         shutdown = true
         logger.info { "Shutting down PokeSmashOrPass bot" }
         hikari.close()
+        scheduler.shutdown()
         logger.info { "Shutdown successfully" }
 
         jda.shutdown()

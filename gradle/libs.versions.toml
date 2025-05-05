@@ -25,6 +25,8 @@ cloud = "2.0.0"
 
 cache4k = "0.13.0"
 
+quartz = "2.5.0"
+
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
@@ -110,6 +112,8 @@ cloud-services = { group = "org.incendo", name = "cloud-services", version.ref =
 cloud-jda = { group = "org.incendo", name = "cloud-jda5", version = "1.0.0-beta.3" }
 
 cache4k = { group = "io.github.reactivecircus.cache4k", name = "cache4k", version.ref = "cache4k" }
+
+quartz = { group = "org.quartz-scheduler", name = "quartz", version.ref = "quartz" }
 
 [bundles]
 kotlinx-coroutines-core = ["kotlinx-coroutines-core", "kotlinx-coroutines-jdk8", "kotlinx-coroutines-slf4j"]

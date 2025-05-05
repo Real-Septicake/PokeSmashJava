@@ -72,6 +72,8 @@ dependencies {
     implementation(libs.bundles.cloud)
 
     implementation(libs.cache4k)
+
+    implementation(libs.quartz)
 }
 
 tasks.register<JavaExec>("genMap") {
