@@ -41,7 +41,7 @@ class ChannelRestrictionPostprocessor<C>(
             }
         } else if(commandMeta.getOrDefault(PokeMeta.DEV_CHANNEL_ONLY, false)) {
             val channel = context.get<Channel>("InteractionChannel")
-            if(channel.idLong != bot.testingChannel!!.toLong()) {
+            if(channel.idLong != bot.testingChannel) {
                 interaction.reply("Command cannot be used outside dev channel.").setEphemeral(true).queue()
                 ConsumerService.interrupt()
             }

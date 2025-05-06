@@ -19,7 +19,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.error
 
 class DevCommands(
-    private val bot : PokeSmashBot
+    private val bot: PokeSmashBot
 ) {
 
     @Command("allow commands <val>")
@@ -33,7 +33,7 @@ class DevCommands(
     ) {
         val event = interaction.interactionEvent() ?: return
         bot.commandsEnabled = value
-        event.reply("Commands ${if(value) "enabled" else "disabled"}.").queue()
+        event.reply("Commands ${if (value) "enabled" else "disabled"}.").queue()
     }
 
     @Command("msg <server> <msg>")
@@ -53,18 +53,25 @@ class DevCommands(
         val info = transaction(bot.db) {
             GuildEntity.findById(server)
         }
-        if(info == null) {
+        if (info == null) {
             event.reply("Server `$server` either does not exist or has not been populated.").queue()
         } else {
-            if(info.channel != null) {
+            if (info.channel != null) {
                 val channel = bot.jda.getTextChannelById(info.channel!!)
-                if(channel == null) {
+                if (channel == null) {
                     event.reply("Server's channel does not exist.").queue()
                     return
                 } else {
                     event.deferReply().queue()
-                    channel.sendMessage(str).queue()
-                    event.hook.sendMessage("Message sent.").queue()
+                    try {
+                        channel.sendMessage(str).queue()
+                        event.hook.sendMessage("Message sent.").queue()
+                        return
+                    } catch (e: InsufficientPermissionException) {
+                        logger.error { "Could not send message to ${info.name}, lacking permissions" }
+                        event.hook.sendMessage("Lacking permissions").queue()
+                        return
+                    }
                 }
             } else {
                 event.reply("Server has not set a channel yet.")
@@ -74,6 +81,7 @@ class DevCommands(
 
     @Command("announce <msg>")
     @CommandDescription("Only usable by bot developer")
+    @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("msg")
     fun announceCommand(
@@ -86,19 +94,17 @@ class DevCommands(
         event.deferReply().queue()
         var sent = 0
         var noChannel = 0
+        var lackPerms = 0
         val format = msg.contains("%owner%")
         transaction(bot.db) {
-            GuildTable.select(GuildTable.channel, GuildTable.id).forEach {
-                if(it[GuildTable.channel] == bot.testingChannel!!.toLong())
-                    return@forEach
-
-                if(it[GuildTable.channel] == null) {
+            GuildTable.select(GuildTable.channel, GuildTable.id, GuildTable.name).forEach {
+                if (it[GuildTable.channel] == null) {
                     noChannel++
                     return@forEach
                 }
 
                 try {
-                    if(format){
+                    if (format) {
                         val guild = bot.jda.getGuildById(it[GuildTable.id].value)!!
                         val formattedStr = msg.replace("%owner%", "<@${guild.ownerId}>")
                         bot.jda.getTextChannelById(it[GuildTable.channel]!!)!!.sendMessage(formattedStr).queue()
@@ -106,15 +112,21 @@ class DevCommands(
                         bot.jda.getTextChannelById(it[GuildTable.channel]!!)!!.sendMessage(msg).queue()
                 } catch (e: InsufficientPermissionException) {
                     logger.error { "Could not send message to ${it[GuildTable.name]}, lacking permissions" }
+                    lackPerms++
                 }
 
                 sent++
             }
         }
-        event.hook.sendMessage("Announcement sent to $sent server${if(sent > 0) "s" else ""}. $noChannel server${if(noChannel > 0) "s" else ""} did not have a channel.").queue()
+        event.hook.sendMessage(
+            "Announcement sent to $sent server${if (sent != 1) "s" else ""}.\n" +
+                    "$noChannel server${if (noChannel != 1) "s" else ""} did not have a channel.\n" +
+                    "$lackPerms server${if (noChannel != 1) "s" else ""} did not give bot necessary permissions"
+        ).queue()
     }
 
     @Command("shutdown [test]")
+    @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("test")
     @CommandDescription("Only usable by bot developer")
@@ -125,9 +137,9 @@ class DevCommands(
     ) {
         val event = interaction.interactionEvent() ?: return
         event.reply("Shutting down...").queue()
-        if(!test){
+        if (!test) {
             transaction(bot.db) {
-                GuildTable.select(GuildTable.channel, GuildTable.id).forEach {
+                GuildTable.select(GuildTable.channel, GuildTable.id, GuildTable.name).forEach {
                     if (it[GuildTable.channel] == bot.testingChannel!!.toLong())
                         return@forEach
 

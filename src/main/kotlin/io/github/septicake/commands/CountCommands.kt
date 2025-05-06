@@ -53,7 +53,7 @@ class CountCommands(
         val info = transaction(bot.db) {
             GuildEntity.findById(event.guild!!.idLong)
         }
-        if(info != null) event.hook.sendMessage("Current poll count is `${info.polls}`")
+        if(info != null) event.hook.sendMessage("Current poll count is `${info.polls}`").queue()
         else event.hook.sendMessage("Server has not yet been populated").queue()
     }
 }
