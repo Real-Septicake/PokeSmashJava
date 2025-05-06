@@ -32,7 +32,6 @@ class MessageUpdateListener(
     }
 
     override fun onMessageReceived(event: MessageReceivedEvent) {
-        logger.info { "Message get" }
         if(bot.jda.selfUser.idLong != event.author.idLong) return
 
         val poll = event.message.poll ?: return

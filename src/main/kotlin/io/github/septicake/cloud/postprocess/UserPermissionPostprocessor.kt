@@ -55,13 +55,13 @@ class UserPermissionPostprocessor<C>(
         logger.warn {
             val commandParameters = meta.getOrNull(PokeMeta.COMMAND_PARAMS)?.reduce { acc, s ->
                 val get = context.get<Any>(s)
-                "$acc$s: $get\n"
+                "\n$acc$s: $get"
             }.orEmpty()
 
-            val commandName = meta.getOrNull(PokeMeta.COMMAND_NAME)
             val userId = interaction.user.idLong
+            val username = interaction.user.name
 
-            "User \"$userId\" attempted to use command \"$commandName\" with params:\n$commandParameters"
+            "User \"$userId\" ($username) attempted to use command \"${interaction.name}\" with params:$commandParameters"
         }
     }
 }

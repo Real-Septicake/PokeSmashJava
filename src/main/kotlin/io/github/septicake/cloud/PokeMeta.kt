@@ -1,7 +1,6 @@
 package io.github.septicake.cloud
 
 import io.github.septicake.cloud.annotations.ChannelRestriction
-import io.github.septicake.cloud.annotations.CommandName
 import io.github.septicake.cloud.annotations.CommandParams
 import io.github.septicake.cloud.annotations.CommandsEnabled
 import io.github.septicake.cloud.annotations.GuildOnly
@@ -22,7 +21,6 @@ object PokeMeta {
 
     val COMMANDS_ENABLED: CloudKey<Boolean> = cloudKey("commands-enabled")
 
-    val COMMAND_NAME: CloudKey<String> = cloudKey("command-name")
     val COMMAND_PARAMS: CloudKey<Array<out String>> = cloudKey("command-params")
 
     fun <T> userPermissionModifier(userPermissions: UserPermissions, builder: Builder<T>) : Builder<T> {
@@ -44,10 +42,6 @@ object PokeMeta {
     @Suppress("UNUSED_PARAMETER")
     fun <T> commandsEnabledModifier(commandsEnabled: CommandsEnabled, builder: Builder<T>): Builder<T> {
         return builder.meta(COMMANDS_ENABLED, true)
-    }
-
-    fun <T> commandNameModifier(commandName: CommandName, builder: Builder<T>): Builder<T> {
-        return builder.meta(COMMAND_NAME, commandName.name)
     }
 
     fun <T> commandParamsModifier(commandParams: CommandParams, builder: Builder<T>): Builder<T> {

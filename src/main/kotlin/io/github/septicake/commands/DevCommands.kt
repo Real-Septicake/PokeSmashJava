@@ -4,7 +4,6 @@ package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
 import io.github.septicake.cloud.annotations.ChannelRestriction
-import io.github.septicake.cloud.annotations.CommandName
 import io.github.septicake.cloud.annotations.CommandParams
 import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.db.GuildEntity
@@ -25,8 +24,8 @@ class DevCommands(
 
     @Command("allow commands <val>")
     @UserPermissions(botOwnerOnly = true)
-    @CommandName("Command Toggle")
     @CommandParams("val")
+    @CommandDescription("Only usable by bot developer")
     fun commandToggleCommand(
         interaction: JDAInteraction,
         @Argument("val")
@@ -38,10 +37,9 @@ class DevCommands(
     }
 
     @Command("msg <server> <msg>")
-    @CommandDescription("Send a message to a server's channel.")
+    @CommandDescription("Only usable by bot developer")
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
-    @CommandName("Msg")
     @CommandParams("server", "msg")
     fun messageCommand(
         interaction: JDAInteraction,
@@ -75,9 +73,8 @@ class DevCommands(
     }
 
     @Command("announce <msg>")
-    @CommandDescription("Announce a message to every server's channel.")
+    @CommandDescription("Only usable by bot developer")
     @UserPermissions(botOwnerOnly = true)
-    @CommandName("Announce")
     @CommandParams("msg")
     fun announceCommand(
         interaction: JDAInteraction,
@@ -119,8 +116,8 @@ class DevCommands(
 
     @Command("shutdown [test]")
     @UserPermissions(botOwnerOnly = true)
-    @CommandName("Shutdown")
     @CommandParams("test")
+    @CommandDescription("Only usable by bot developer")
     suspend fun shutdownCommand(
         interaction: JDAInteraction,
         @Argument("test", description = "The shutdown is for a test and does not announce the shutdown to servers")

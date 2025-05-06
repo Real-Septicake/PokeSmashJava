@@ -7,7 +7,6 @@ import com.zaxxer.hikari.HikariDataSource
 import io.github.classgraph.ClassGraph
 import io.github.septicake.cloud.PokeMeta
 import io.github.septicake.cloud.annotations.ChannelRestriction
-import io.github.septicake.cloud.annotations.CommandName
 import io.github.septicake.cloud.annotations.CommandParams
 import io.github.septicake.cloud.annotations.CommandsEnabled
 import io.github.septicake.cloud.annotations.GuildOnly
@@ -101,7 +100,6 @@ class PokeSmashBot(builder: JDABuilder) {
         registerBuilderModifier(UserPermissions::class.java, PokeMeta::userPermissionModifier)
         registerBuilderModifier(GuildOnly::class.java, PokeMeta::guildOnlyModifier)
         registerBuilderModifier(CommandsEnabled::class.java, PokeMeta::commandsEnabledModifier)
-        registerBuilderModifier(CommandName::class.java, PokeMeta::commandNameModifier)
         registerBuilderModifier(CommandParams::class.java, PokeMeta::commandParamsModifier)
 
         // by default all commands should be deferred & ephemeral

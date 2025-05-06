@@ -28,7 +28,6 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("whitelist add <user>")
-    @CommandName("Add Whitelist")
     @CommandParams("user")
     fun whitelistAddCommand(
         interaction: JDAInteraction,
@@ -53,7 +52,6 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("whitelist remove <user>")
-    @CommandName("Remove Whitelist")
     fun whitelistRemoveCommand(
         interaction: JDAInteraction,
         @Argument("user")
@@ -76,7 +74,6 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("set channel <channel>")
-    @CommandName("Set Channel")
     fun setChannel(
         interaction: JDAInteraction,
         @Argument("channel")
@@ -106,7 +103,6 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("populate <channel> [polls]")
-    @CommandName("Populate")
     fun populateCommand(
         interaction: JDAInteraction,
         @Argument("channel", description = "Channel for `next` to be called in, and where announcements will be sent to")
@@ -143,7 +139,6 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("set poll <pokemon> <smashes> <passes>")
-    @CommandName("Set Poll")
     fun addPollCommand(
         interaction: JDAInteraction,
         @Argument("pokemon")
@@ -168,7 +163,6 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("remove poll <pokemon>")
-    @CommandName("Remove Poll")
     fun removePollCommand(
         interaction: JDAInteraction,
         @Argument("pokemon")
@@ -191,7 +185,6 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("message <text>")
-    @CommandName("Message")
     fun messageCommand(
         interaction: JDAInteraction,
         @Argument("text")

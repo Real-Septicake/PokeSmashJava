@@ -14,6 +14,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.utils.messages.MessagePollData
 import org.incendo.cloud.annotations.Argument
@@ -31,7 +32,6 @@ class PokeCommands(
     @Command("reset")
     @GuildOnly
     @UserPermissions(whitelistOnly = true)
-    @CommandName("Reset")
     fun resetCommand(
         interaction: JDAInteraction
     ) {
@@ -40,7 +40,7 @@ class PokeCommands(
         val info = transaction(bot.db) {
             GuildEntity.findById(event.guild!!.idLong)
         }
-        if(info == null) {
+        if (info == null) {
             event.hook.sendMessage("Server has not been populated yet.").queue()
         } else {
             transaction(bot.db) { info.offset = 0 }
@@ -51,8 +51,8 @@ class PokeCommands(
     @Command("next")
     @GuildOnly
     @UserPermissions(whitelistOnly = true)
+    @ChannelRestriction(serverChannel = true)
     @CommandsEnabled
-    @CommandName("Next")
     suspend fun nextCommand(
         interaction: JDAInteraction
     ) {
@@ -61,11 +61,21 @@ class PokeCommands(
         val info = transaction(bot.db) {
             GuildEntity.findById(event.guild!!.idLong)
         }
-        if(info == null) {
+        if (info == null) {
             event.hook.sendMessage("Server has not been populated yet.").queue()
         } else {
+            if (!event.guild!!.selfMember.hasPermission(
+                    event.guildChannel,
+                    Permission.CREATE_PUBLIC_THREADS,
+                    Permission.MESSAGE_SEND_POLLS,
+                    Permission.MESSAGE_SEND_IN_THREADS
+                )
+            ) {
+                event.hook.sendMessage("Insufficient permissions. Requires `Create Public Threads`, `Send Messages in Threads`, and, `Create Polls`").queue()
+                return
+            }
             val count = min(bot.map.size - info.offset, info.polls)
-            if(count != 0){
+            if (count != 0) {
                 PokeApi.listPokemonPaged(info.offset, count).results.forEach { pokemon ->
                     (event.channel as MessageChannel).sendMessage("").setPoll(
                         MessagePollData.builder(pokemon.name.replaceFirstChar { it.titlecase() })
@@ -89,24 +99,28 @@ class PokeCommands(
     @Command("smash global totals <info> <format>")
     fun smashGlobalTotalCommand(
         interaction: JDAInteraction,
-        @Argument("info",
-            description = "What info should be should be displayed (either \"polls\" or \"votes\")")
+        @Argument(
+            "info",
+            description = "What info should be should be displayed (either \"polls\" or \"votes\")"
+        )
         @RequireOptions("polls", "votes")
         info: String,
-        @Argument("format",
-            description = "What format the info should be displayed in (either \"count\" or \"percent\")")
+        @Argument(
+            "format",
+            description = "What format the info should be displayed in (either \"count\" or \"percent\")"
+        )
         @RequireOptions("count", "percent")
         format: String
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
-        if(info == "polls") {
+        if (info == "polls") {
             val smashes = transaction(bot.db) {
                 PollTable.select(PollTable.result).where {
                     PollTable.result eq PollResult.SMASHED
                 }.count()
             }
-            if(format == "count") {
+            if (format == "count") {
                 event.hook.sendMessage("Smash has won `$smashes` times").queue()
             } else {
                 val total = transaction(bot.db) {
@@ -118,7 +132,7 @@ class PokeCommands(
             val smashes = transaction(bot.db) {
                 PollTable.select(PollTable.smashes).sumOf { it[PollTable.smashes] }
             }
-            if(format == "count") {
+            if (format == "count") {
                 event.hook.sendMessage("There have been `$smashes` votes for smash").queue()
             } else {
                 val total = transaction(bot.db) {
@@ -126,7 +140,8 @@ class PokeCommands(
                         it[PollTable.smashes] + it[PollTable.passes]
                     }
                 }
-                event.hook.sendMessage("`${"%.2f".format((smashes / total) * 100)}`% of the total votes have been for smash").queue()
+                event.hook.sendMessage("`${"%.2f".format((smashes / total) * 100)}`% of the total votes have been for smash")
+                    .queue()
             }
         }
     }
@@ -160,17 +175,30 @@ class PokeCommands(
                 }.count()
             }
             if (format == "count") {
-                event.hook.sendMessage("`$smashes` server(s) have voted to smash `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`").queue()
+                event.hook.sendMessage(
+                    "`$smashes` server(s) have voted to smash `${
+                        bot.map[pokemonId]!!.replaceFirstChar(
+                            Char::titlecase
+                        )
+                    }`"
+                ).queue()
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().where {
                         PollTable.pokemon eq pokemonId
                     }.count()
                 }
-                if(total == 0L)
-                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
+                if (total == 0L)
+                    event.hook.sendMessage(
+                        "No server has completed a poll for `${
+                            bot.map[pokemonId]!!.replaceFirstChar(
+                                Char::titlecase
+                            )
+                        }`"
+                    )
                 else
-                    event.hook.sendMessage("Smash has won `${"%.2f".format((smashes / total) * 100)}`% of the time").queue()
+                    event.hook.sendMessage("Smash has won `${"%.2f".format((smashes / total) * 100)}`% of the time")
+                        .queue()
             }
         } else {
             val smashes = transaction(bot.db) {
@@ -185,12 +213,20 @@ class PokeCommands(
                     }
                 }
 
-                if(total == 0L)
-                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
+                if (total == 0L)
+                    event.hook.sendMessage(
+                        "No server has completed a poll for `${
+                            bot.map[pokemonId]!!.replaceFirstChar(
+                                Char::titlecase
+                            )
+                        }`"
+                    )
                 else
-                    event.hook.sendMessage("`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
-                        bot.map[pokemonId]
-                    } have been for smash")
+                    event.hook.sendMessage(
+                        "`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
+                            bot.map[pokemonId]
+                        } have been for smash"
+                    )
                         .queue()
             }
         }
@@ -200,33 +236,38 @@ class PokeCommands(
     @Command("smash server totals <info> <format>")
     fun smashServerTotalCommand(
         interaction: JDAInteraction,
-        @Argument("info",
-            description = "What info should be should be displayed (either \"polls\" or \"votes\")")
+        @Argument(
+            "info",
+            description = "What info should be should be displayed (either \"polls\" or \"votes\")"
+        )
         @RequireOptions("polls", "votes")
         info: String,
-        @Argument("format",
-            description = "What format the info should be displayed in (either \"count\" or \"percent\")")
+        @Argument(
+            "format",
+            description = "What format the info should be displayed in (either \"count\" or \"percent\")"
+        )
         @RequireOptions("count", "percent")
         format: String
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
-        if(info == "polls") {
+        if (info == "polls") {
             val guildInfo = transaction(bot.db) {
                 GuildEntity.findById(event.guild!!.idLong)
             }
-            if(guildInfo == null) {
+            if (guildInfo == null) {
                 event.hook.sendMessage("Server has not been populated yet.")
                 return
             }
-            if(guildInfo.smashes + guildInfo.passes == 0L) {
+            if (guildInfo.smashes + guildInfo.passes == 0L) {
                 event.hook.sendMessage("Server has not completed any polls")
                 return
             }
-            if(format == "count") {
+            if (format == "count") {
                 event.hook.sendMessage("Smash has won `${guildInfo.smashes}` times").queue()
             } else {
-                event.hook.sendMessage("Smash has won `${"%.2f".format((guildInfo.smashes / (guildInfo.smashes + guildInfo.passes)) * 100)}`% of the time").queue()
+                event.hook.sendMessage("Smash has won `${"%.2f".format((guildInfo.smashes / (guildInfo.smashes + guildInfo.passes)) * 100)}`% of the time")
+                    .queue()
             }
         } else {
             val smashes = transaction(bot.db) {
@@ -234,7 +275,7 @@ class PokeCommands(
                     PollTable.guild eq event.guild!!.idLong
                 }.sumOf { it[PollTable.smashes] }
             }
-            if(format == "count") {
+            if (format == "count") {
                 event.hook.sendMessage("There have been `$smashes` votes for smash").queue()
             } else {
                 val total = transaction(bot.db) {
@@ -244,7 +285,8 @@ class PokeCommands(
                         it[PollTable.smashes] + it[PollTable.passes]
                     }
                 }
-                event.hook.sendMessage("`${"%.2f".format((smashes / total) * 100)}`% of the total votes have been for smash").queue()
+                event.hook.sendMessage("`${"%.2f".format((smashes / total) * 100)}`% of the total votes have been for smash")
+                    .queue()
             }
         }
     }
@@ -280,17 +322,30 @@ class PokeCommands(
                 }.count()
             }
             if (format == "count") {
-                event.hook.sendMessage("`$smashes` server(s) have voted to smash `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`").queue()
+                event.hook.sendMessage(
+                    "`$smashes` server(s) have voted to smash `${
+                        bot.map[pokemonId]!!.replaceFirstChar(
+                            Char::titlecase
+                        )
+                    }`"
+                ).queue()
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().where {
                         PollTable.pokemon eq pokemonId and (PollTable.guild eq event.guild!!.idLong)
                     }.count()
                 }
-                if(total == 0L)
-                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
+                if (total == 0L)
+                    event.hook.sendMessage(
+                        "No server has completed a poll for `${
+                            bot.map[pokemonId]!!.replaceFirstChar(
+                                Char::titlecase
+                            )
+                        }`"
+                    )
                 else
-                    event.hook.sendMessage("Smash has won `${"%.2f".format((smashes / total) * 100)}`% of the time").queue()
+                    event.hook.sendMessage("Smash has won `${"%.2f".format((smashes / total) * 100)}`% of the time")
+                        .queue()
             }
         } else {
             val smashes = transaction(bot.db) {
@@ -309,12 +364,20 @@ class PokeCommands(
                     }
                 }
 
-                if(total == 0L)
-                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
+                if (total == 0L)
+                    event.hook.sendMessage(
+                        "No server has completed a poll for `${
+                            bot.map[pokemonId]!!.replaceFirstChar(
+                                Char::titlecase
+                            )
+                        }`"
+                    )
                 else
-                    event.hook.sendMessage("`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
-                        bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)
-                    } have been for smash")
+                    event.hook.sendMessage(
+                        "`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
+                            bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)
+                        } have been for smash"
+                    )
                         .queue()
             }
         }
@@ -323,24 +386,28 @@ class PokeCommands(
     @Command("pass global totals <info> <format>")
     fun passGlobalTotalCommand(
         interaction: JDAInteraction,
-        @Argument("info",
-            description = "What info should be should be displayed (either \"polls\" or \"votes\")")
+        @Argument(
+            "info",
+            description = "What info should be should be displayed (either \"polls\" or \"votes\")"
+        )
         @RequireOptions("polls", "votes")
         info: String,
-        @Argument("format",
-            description = "What format the info should be displayed in (either \"count\" or \"percent\")")
+        @Argument(
+            "format",
+            description = "What format the info should be displayed in (either \"count\" or \"percent\")"
+        )
         @RequireOptions("count", "percent")
         format: String
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
-        if(info == "polls") {
+        if (info == "polls") {
             val passes = transaction(bot.db) {
                 PollTable.select(PollTable.result).where {
                     PollTable.result eq PollResult.PASSED
                 }.count()
             }
-            if(format == "count") {
+            if (format == "count") {
                 event.hook.sendMessage("Pass has won `$passes` times").queue()
             } else {
                 val total = transaction(bot.db) {
@@ -352,7 +419,7 @@ class PokeCommands(
             val passes = transaction(bot.db) {
                 PollTable.select(PollTable.passes).sumOf { it[PollTable.passes] }
             }
-            if(format == "count") {
+            if (format == "count") {
                 event.hook.sendMessage("There have been `$passes` votes for pass").queue()
             } else {
                 val total = transaction(bot.db) {
@@ -360,7 +427,8 @@ class PokeCommands(
                         it[PollTable.smashes] + it[PollTable.passes]
                     }
                 }
-                event.hook.sendMessage("`${"%.2f".format((passes / total) * 100)}`% of the total votes have been for pass").queue()
+                event.hook.sendMessage("`${"%.2f".format((passes / total) * 100)}`% of the total votes have been for pass")
+                    .queue()
             }
         }
     }
@@ -369,33 +437,38 @@ class PokeCommands(
     @Command("pass server totals <info> <format>")
     fun passServerTotalCommand(
         interaction: JDAInteraction,
-        @Argument("info",
-            description = "What info should be should be displayed (either \"polls\" or \"votes\")")
+        @Argument(
+            "info",
+            description = "What info should be should be displayed (either \"polls\" or \"votes\")"
+        )
         @RequireOptions("polls", "votes")
         info: String,
-        @Argument("format",
-            description = "What format the info should be displayed in (either \"count\" or \"percent\")")
+        @Argument(
+            "format",
+            description = "What format the info should be displayed in (either \"count\" or \"percent\")"
+        )
         @RequireOptions("count", "percent")
         format: String
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
-        if(info == "polls") {
+        if (info == "polls") {
             val guildInfo = transaction(bot.db) {
                 GuildEntity.findById(event.guild!!.idLong)
             }
-            if(guildInfo == null) {
+            if (guildInfo == null) {
                 event.hook.sendMessage("Server has not been populated yet.")
                 return
             }
-            if(guildInfo.smashes + guildInfo.passes == 0L) {
+            if (guildInfo.smashes + guildInfo.passes == 0L) {
                 event.hook.sendMessage("Server has not completed any polls")
                 return
             }
-            if(format == "count") {
+            if (format == "count") {
                 event.hook.sendMessage("Pass has won `${guildInfo.passes}` times").queue()
             } else {
-                event.hook.sendMessage("Pass has won `${"%.2f".format((guildInfo.passes / (guildInfo.smashes + guildInfo.passes)) * 100)}`% of the time").queue()
+                event.hook.sendMessage("Pass has won `${"%.2f".format((guildInfo.passes / (guildInfo.smashes + guildInfo.passes)) * 100)}`% of the time")
+                    .queue()
             }
         } else {
             val passes = transaction(bot.db) {
@@ -403,7 +476,7 @@ class PokeCommands(
                     PollTable.guild eq event.guild!!.idLong
                 }.sumOf { it[PollTable.passes] }
             }
-            if(format == "count") {
+            if (format == "count") {
                 event.hook.sendMessage("There have been `$passes` votes for pass").queue()
             } else {
                 val total = transaction(bot.db) {
@@ -413,7 +486,8 @@ class PokeCommands(
                         it[PollTable.smashes] + it[PollTable.passes]
                     }
                 }
-                event.hook.sendMessage("`${"%.2f".format((passes / total) * 100)}`% of the total votes have been for pass").queue()
+                event.hook.sendMessage("`${"%.2f".format((passes / total) * 100)}`% of the total votes have been for pass")
+                    .queue()
             }
         }
     }
@@ -447,17 +521,30 @@ class PokeCommands(
                 }.count()
             }
             if (format == "count") {
-                event.hook.sendMessage("`$smashes` server(s) have voted to pass `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`").queue()
+                event.hook.sendMessage(
+                    "`$smashes` server(s) have voted to pass `${
+                        bot.map[pokemonId]!!.replaceFirstChar(
+                            Char::titlecase
+                        )
+                    }`"
+                ).queue()
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().where {
                         PollTable.pokemon eq pokemonId
                     }.count()
                 }
-                if(total == 0L)
-                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
+                if (total == 0L)
+                    event.hook.sendMessage(
+                        "No server has completed a poll for `${
+                            bot.map[pokemonId]!!.replaceFirstChar(
+                                Char::titlecase
+                            )
+                        }`"
+                    )
                 else
-                    event.hook.sendMessage("Pass has won `${"%.2f".format((smashes / total) * 100)}`% of the time").queue()
+                    event.hook.sendMessage("Pass has won `${"%.2f".format((smashes / total) * 100)}`% of the time")
+                        .queue()
             }
         } else {
             val smashes = transaction(bot.db) {
@@ -466,7 +553,13 @@ class PokeCommands(
                 }.sumOf { it[PollTable.passes] }
             }
             if (format == "count") {
-                event.hook.sendMessage("There have been `$smashes` votes to pass ${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}").queue()
+                event.hook.sendMessage(
+                    "There have been `$smashes` votes to pass ${
+                        bot.map[pokemonId]!!.replaceFirstChar(
+                            Char::titlecase
+                        )
+                    }"
+                ).queue()
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().sumOf {
@@ -474,12 +567,20 @@ class PokeCommands(
                     }
                 }
 
-                if(total == 0L)
-                    event.hook.sendMessage("No server has completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
+                if (total == 0L)
+                    event.hook.sendMessage(
+                        "No server has completed a poll for `${
+                            bot.map[pokemonId]!!.replaceFirstChar(
+                                Char::titlecase
+                            )
+                        }`"
+                    )
                 else
-                    event.hook.sendMessage("`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
-                        bot.map[pokemonId]
-                    } have been for pass")
+                    event.hook.sendMessage(
+                        "`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
+                            bot.map[pokemonId]
+                        } have been for pass"
+                    )
                         .queue()
             }
         }
@@ -516,17 +617,35 @@ class PokeCommands(
                 }.count()
             }
             if (format == "count") {
-                event.hook.sendMessage("`$smashes` server(s) have voted to pass `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`").queue()
+                event.hook.sendMessage(
+                    "`$smashes` server(s) have voted to pass `${
+                        bot.map[pokemonId]!!.replaceFirstChar(
+                            Char::titlecase
+                        )
+                    }`"
+                ).queue()
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().where {
                         PollTable.pokemon eq pokemonId and (PollTable.guild eq event.guild!!.idLong)
                     }.count()
                 }
-                if(total == 0L)
-                    event.hook.sendMessage("This server has not completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
+                if (total == 0L)
+                    event.hook.sendMessage(
+                        "This server has not completed a poll for `${
+                            bot.map[pokemonId]!!.replaceFirstChar(
+                                Char::titlecase
+                            )
+                        }`"
+                    )
                 else
-                    event.hook.sendMessage("Pass has won `${"%.2f".format((smashes / total) * 100)}`% of the time for ${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}").queue()
+                    event.hook.sendMessage(
+                        "Pass has won `${"%.2f".format((smashes / total) * 100)}`% of the time for ${
+                            bot.map[pokemonId]!!.replaceFirstChar(
+                                Char::titlecase
+                            )
+                        }"
+                    ).queue()
             }
         } else {
             val smashes = transaction(bot.db) {
@@ -535,7 +654,13 @@ class PokeCommands(
                 }.sumOf { it[PollTable.passes] }
             }
             if (format == "count") {
-                event.hook.sendMessage("There have been `$smashes` votes to pass ${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}").queue()
+                event.hook.sendMessage(
+                    "There have been `$smashes` votes to pass ${
+                        bot.map[pokemonId]!!.replaceFirstChar(
+                            Char::titlecase
+                        )
+                    }"
+                ).queue()
             } else {
                 val total = transaction(bot.db) {
                     PollTable.selectAll().where {
@@ -545,12 +670,20 @@ class PokeCommands(
                     }
                 }
 
-                if(total == 0L)
-                    event.hook.sendMessage("This server has not completed a poll for `${bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)}`")
+                if (total == 0L)
+                    event.hook.sendMessage(
+                        "This server has not completed a poll for `${
+                            bot.map[pokemonId]!!.replaceFirstChar(
+                                Char::titlecase
+                            )
+                        }`"
+                    )
                 else
-                    event.hook.sendMessage("`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
-                        bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)
-                    } have been for pass")
+                    event.hook.sendMessage(
+                        "`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
+                            bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)
+                        } have been for pass"
+                    )
                         .queue()
             }
         }
@@ -589,10 +722,12 @@ class PokeCommands(
                 field(name = "Height", value = "${pokemon.height * 10}cm") // height is in decimeters (why)
                 field(name = "Weight", value = "%.1fkg".format(pokemon.weight / 10.0)) // weight is in hectograms (why)
                 field(name = "Species", value = pokemon.species.name.replaceFirstChar { it.titlecase() })
-                field(name = "Types", value = pokemon.types.joinToString(separator = " & ") { type -> type.type.name.replaceFirstChar { it.titlecase() } })
+                field(
+                    name = "Types",
+                    value = pokemon.types.joinToString(separator = " & ") { type -> type.type.name.replaceFirstChar { it.titlecase() } })
                 field() // empty field to keep alignment
 
-                if(pokemonEntity != null)
+                if (pokemonEntity != null)
                     field("Global Votes", value = "${pokemonEntity.smashes} Smashes • ${pokemonEntity.passes} Passes")
                 else
                     field("Global Votes", value = "No polls have been completed for this pokemon")

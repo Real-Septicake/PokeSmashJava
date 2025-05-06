@@ -3,7 +3,6 @@
 package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
-import io.github.septicake.cloud.annotations.CommandName
 import io.github.septicake.cloud.annotations.CommandParams
 import io.github.septicake.cloud.annotations.GuildOnly
 import io.github.septicake.cloud.annotations.UserPermissions
@@ -24,7 +23,6 @@ class CountCommands(
     @GuildOnly
     @UserPermissions(whitelistOnly = true)
     @Command(value = "set count <count>")
-    @CommandName("Set Count")
     @CommandParams("count")
     fun countSetCommand(
         interaction: JDAInteraction,
