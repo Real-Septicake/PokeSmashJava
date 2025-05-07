@@ -41,7 +41,7 @@ class PokemonInfoParser<C : Any>(
         val parsedId = input.toIntOrNull() ?: nameToId[input]
         val pokemonId = parsedId ?: if (input == "current" && guild != null) bot.guildEntity(guild).offset else null
 
-        if (pokemonId == null)
+        if (pokemonId == null || pokemonId <= 0 || pokemonId > bot.map.size)
             return ArgumentParseResult.failure(IllegalArgumentException("Could not find a pokemon with the name or id '$input'. The name/id is either incorrect or was not specified"))
 
         return runCatching { pokemonById(pokemonId) }.fold(
