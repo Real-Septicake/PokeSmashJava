@@ -53,6 +53,7 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.quartz.*
 import org.quartz.impl.StdSchedulerFactory
+import org.slf4j.kotlin.debug
 import org.slf4j.kotlin.getLogger
 import org.slf4j.kotlin.info
 import java.util.concurrent.ThreadFactory
@@ -186,7 +187,9 @@ class PokeSmashBot(builder: JDABuilder) {
 
         logger.info { "Bot successfully started" }
 
-        val job = JobBuilder.newJob(PollCheck::class.java).withIdentity(PokeSmashConstants.PollCheckIdentity).build()
+        val job = JobBuilder.newJob(PollCheck::class.java)
+            .withIdentity(PokeSmashConstants.PollCheckIdentity)
+            .build()
 
         val trigger = TriggerBuilder.newTrigger()
             .withIdentity("PollTrigger")
@@ -198,6 +201,7 @@ class PokeSmashBot(builder: JDABuilder) {
         val sf = StdSchedulerFactory()
         scheduler = sf.getScheduler()
 
+        scheduler.context["Bot"] = this
         scheduler.scheduleJob(job, trigger)
 
         scheduler.start()
