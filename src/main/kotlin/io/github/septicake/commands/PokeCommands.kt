@@ -7,6 +7,7 @@ import io.github.septicake.cloud.annotations.*
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.PollResult
 import io.github.septicake.db.PollTable
+import io.github.septicake.db.logger
 import io.github.septicake.pokeapi.PokeApi
 import io.github.septicake.pokeapi.PokemonInfo
 import io.github.septicake.util.sendMessage
@@ -23,6 +24,7 @@ import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.slf4j.kotlin.info
 import kotlin.math.min
 
 class PokeCommands(
@@ -707,11 +709,17 @@ class PokeCommands(
         val pokemonEntity = bot.pokemonEntity(pokemon.id)
         val pollEntity = bot.pollEntity(jdaGuild.idLong, pokemon.id)
 
+        logger.info { "Pokemon ${pokemon.name} (${pokemon.id}) info checked in server ${jdaGuild.name}" }
+
+        val species = pokemon.species.fetchInfo()
+        val flavor = species.flavorTexts.find { it.language.name == "en" }!!
+
         event.hook.sendMessage {
             embed {
                 title = pokemon.name.replaceFirstChar { it.titlecase() }
-                color = PokeApi.pokemonColor(pokemon.id).colorFromName()
+                color = species.color.colorFromName()
                 url = "https://pokemondb.net/pokedex/%04d".format(pokemon.id)
+                description = flavor.formatFlavorText()
                 // description = // TODO: Find some reasonable way to get a description
                 // could we use "https://img.pokemondb.net/artwork/large/${pokemon.name}.jpg" instead?
                 thumbnail = pokemon.sprites["front_default"]?.jsonPrimitive?.contentOrNull
@@ -721,7 +729,7 @@ class PokeCommands(
                 field(name = "Name", value = pokemon.name.replaceFirstChar { it.titlecase() })
                 field(name = "Height", value = "${pokemon.height * 10}cm") // height is in decimeters (why)
                 field(name = "Weight", value = "%.1fkg".format(pokemon.weight / 10.0)) // weight is in hectograms (why)
-                field(name = "Species", value = pokemon.species.name.replaceFirstChar { it.titlecase() })
+                field(name = "Species", value = species.name.replaceFirstChar { it.titlecase() })
                 field(
                     name = "Types",
                     value = pokemon.types.joinToString(separator = " & ") { type -> type.type.name.replaceFirstChar { it.titlecase() } })
@@ -737,8 +745,10 @@ class PokeCommands(
                 else
                     field() // empty field to keep alignment
 
+                field(name = "National Dex Number", value = "${pokemon.id}")
+
                 footer {
-                    name = "Info for ${pokemon.name.replaceFirstChar { it.titlecase() }}"
+                    name = "Info for ${pokemon.name.replaceFirstChar { it.titlecase() }} • Pokedex Entry: ${flavor.version.fetchInfo().names.find { it.language.name == "en" }!!.name}"
                 }
             }
         }

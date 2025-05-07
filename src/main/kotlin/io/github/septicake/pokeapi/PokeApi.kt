@@ -1,5 +1,6 @@
 package io.github.septicake.pokeapi
 
+import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.FuelManager
 import com.github.kittinunf.fuel.core.Parameters
 import com.github.kittinunf.fuel.coroutines.awaitObject
@@ -20,8 +21,15 @@ object PokeApi {
     }
 
     suspend inline fun <reified T : Any> request(path: String, parameters: Parameters? = null): T {
-        return fuel.get(path.replace(fuel.basePath!!, ""), parameters)
-            .awaitObject(kotlinxDeserializerOf<T>(serializer<T>(), json))
+        try {
+            return fuel.get(path.replace(fuel.basePath!!, ""), parameters)
+                .awaitObject(kotlinxDeserializerOf<T>(serializer<T>(), json))
+        } catch(e: FuelError) {
+            // try again
+            // TODO: Literally any better way of recovering from the error
+            return fuel.get(path.replace(fuel.basePath!!, ""), parameters)
+                .awaitObject(kotlinxDeserializerOf<T>(serializer<T>(), json))
+        }
     }
 
     suspend fun listPokemon(bulkQuery: Int = 20): Flow<Pokemon> = flow {
@@ -45,6 +53,4 @@ object PokeApi {
     suspend fun pokemon(id: Int): PokemonInfo = request<PokemonInfo>("/pokemon/$id")
 
     suspend fun pokemonColor(pokemonId: Int): PokemonColor = request("/pokemon-color/$pokemonId")
-
-    suspend fun pokemonColor(pokemonName: String): PokemonColor = request("/pokemon-color/$pokemonName")
 }

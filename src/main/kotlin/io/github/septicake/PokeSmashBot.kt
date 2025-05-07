@@ -178,7 +178,9 @@ class PokeSmashBot(builder: JDABuilder) {
 
         jda.updateCommands()
             .addCommands(commandManager.commandFactory().createCommands(CommandScope.global()))
-            .queue()
+            .queue {
+                logger.info { "Commands added" }
+            }
 
         jda.awaitReady()
 
@@ -243,6 +245,7 @@ class PokeSmashBot(builder: JDABuilder) {
     }
 
     fun setPollResults(guildId: Long, pokemonId: Int, smashVotes: Long, passVotes: Long) {
+        logger.debug { "Set $pokemonId poll in $guildId to smashes: $smashVotes and passes: $passVotes" }
         val poll = pollEntity(guildId, pokemonId)
         if (poll != null) {
             val guildInfo = transaction(db) {
