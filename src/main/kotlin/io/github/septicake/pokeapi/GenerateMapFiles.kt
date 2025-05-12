@@ -25,9 +25,23 @@ suspend fun main() {
 
         }.collect { info ->
             withContext(Dispatchers.IO) {
-
                 if (info.id % 100 == 0)
-                    logger.info { "Written ${info.id} entries" }
+                    logger.info { "Written ${info.id} pokemon" }
+
+                writer.append(info.name)
+                writer.appendLine()
+            }
+        }
+    }
+
+    val speciesMap = Path("src/main/resources/species_map.txt")
+
+    speciesMap.bufferedWriter().use { writer ->
+        PokeApi.listSpecies().flowOn(Dispatchers.IO).map { it.fetchInfo() }
+        .collect { info ->
+            withContext(Dispatchers.IO) {
+                if(info.id % 100 == 0)
+                    logger.info { "Written ${info.id} species" }
 
                 writer.append(info.name)
                 writer.appendLine()

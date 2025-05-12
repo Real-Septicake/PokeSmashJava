@@ -14,14 +14,14 @@ class PokemonComponentPreprocessor<C>(
 
         try {
             val num = input.toInt()
-            bot.map[num]
+            bot.pokemonMap[num]
                 ?: return ArgumentParseResult.failure(
-                    InvalidNumberException(input, bot.map.size)
+                    InvalidNumberException(input, bot.pokemonMap.size)
                 )
 
             return ArgumentParseResult.success(true)
         } catch(e : NumberFormatException) {
-            bot.map.inverse()[input.lowercase()]
+            bot.pokemonMap.inverse()[input.lowercase()]
                 ?: return ArgumentParseResult.failure(
                     InvalidPokemonNameException(input)
                 )

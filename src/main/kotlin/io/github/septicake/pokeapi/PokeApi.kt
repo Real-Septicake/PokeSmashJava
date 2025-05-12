@@ -9,8 +9,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
+import org.slf4j.kotlin.error
+import org.slf4j.kotlin.getLogger
 
 object PokeApi {
+    val logger by getLogger()
+
     val fuel = FuelManager().apply {
         basePath = "https://pokeapi.co/api/v2/"
     }
@@ -27,6 +31,7 @@ object PokeApi {
         } catch(e: FuelError) {
             // try again
             // TODO: Literally any better way of recovering from the error
+            logger.error { "Fuel error encountered when accessing path $path, trying again..." }
             return fuel.get(path.replace(fuel.basePath!!, ""), parameters)
                 .awaitObject(kotlinxDeserializerOf<T>(serializer<T>(), json))
         }
@@ -44,13 +49,31 @@ object PokeApi {
         } while (results.next != null)
     }
 
+    suspend fun listSpecies(bulkQuery: Int = 20): Flow<PokemonSpecies> = flow {
+        var results: NamedApiResourceList<PokemonSpecies>
+        var offset = 0
+        do {
+            results = listSpeciesPaged(offset = offset, limit = bulkQuery)
+            offset += bulkQuery
+            for (result in results.results)
+                emit(result)
+
+        } while (results.next != null)
+    }
+
     suspend fun listPokemonPaged(offset: Int, limit: Int): NamedApiResourceList<Pokemon> {
         return request<NamedApiResourceList<Pokemon>>("/pokemon", listOf("offset" to offset, "limit" to limit))
+    }
+
+    suspend fun listSpeciesPaged(offset: Int, limit: Int): NamedApiResourceList<PokemonSpecies> {
+        return request<NamedApiResourceList<PokemonSpecies>>("/pokemon-species", listOf("offset" to offset, "limit" to limit))
     }
 
     suspend fun pokemon(name: String): PokemonInfo = request<PokemonInfo>("/pokemon/$name")
 
     suspend fun pokemon(id: Int): PokemonInfo = request<PokemonInfo>("/pokemon/$id")
+
+    suspend fun species(id: Int): PokemonSpeciesInfo = request<PokemonSpeciesInfo>("/pokemon-species/$id")
 
     suspend fun pokemonColor(pokemonId: Int): PokemonColor = request("/pokemon-color/$pokemonId")
 }

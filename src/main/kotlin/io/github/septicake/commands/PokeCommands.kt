@@ -10,6 +10,7 @@ import io.github.septicake.db.PollTable
 import io.github.septicake.db.logger
 import io.github.septicake.pokeapi.PokeApi
 import io.github.septicake.pokeapi.PokemonInfo
+import io.github.septicake.pokeapi.PokemonSpeciesInfo
 import io.github.septicake.util.sendMessage
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
@@ -20,6 +21,7 @@ import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.utils.messages.MessagePollData
 import org.incendo.cloud.annotations.Argument
 import org.incendo.cloud.annotations.Command
+import org.incendo.cloud.annotations.CommandDescription
 import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
@@ -34,6 +36,7 @@ class PokeCommands(
     @Command("reset")
     @GuildOnly
     @UserPermissions(whitelistOnly = true)
+    @CommandDescription("Reset poll count, starting from bulbasaur again, or whatever national dex number 1 is")
     fun resetCommand(
         interaction: JDAInteraction
     ) {
@@ -55,6 +58,7 @@ class PokeCommands(
     @UserPermissions(whitelistOnly = true)
     @ChannelRestriction(serverChannel = true)
     @CommandsEnabled
+    @CommandDescription("Send the next polls")
     suspend fun nextCommand(
         interaction: JDAInteraction
     ) {
@@ -76,7 +80,7 @@ class PokeCommands(
                 event.hook.sendMessage("Insufficient permissions. Requires `Create Public Threads`, `Send Messages in Threads`, and, `Create Polls`").queue()
                 return
             }
-            val count = min(bot.map.size - info.offset, info.polls)
+            val count = min(bot.pokemonMap.size - info.offset, info.polls)
             if (count != 0) {
                 PokeApi.listPokemonPaged(info.offset, count).results.forEach { pokemon ->
                     (event.channel as MessageChannel).sendMessage("").setPoll(
@@ -99,6 +103,7 @@ class PokeCommands(
     }
 
     @Command("smash global totals <info> <format>")
+    @CommandDescription("Get global total pass data.")
     fun smashGlobalTotalCommand(
         interaction: JDAInteraction,
         @Argument(
@@ -149,6 +154,7 @@ class PokeCommands(
     }
 
     @Command("smash global pokemon <info> <format> <pokemon>")
+    @CommandDescription("Get the global smash data on the specified pokemon. Due to api shenanigans, using the national dex number is suggested")
     fun smashGlobalPokemonCommand(
         interaction: JDAInteraction,
         @Argument(
@@ -169,7 +175,7 @@ class PokeCommands(
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
-        val pokemonId = pokemon.toIntOrNull() ?: bot.map.inverse()[pokemon.lowercase()]!!
+        val pokemonId = pokemon.toIntOrNull() ?: bot.pokemonMap.inverse()[pokemon.lowercase()]!!
         if (info == "polls") {
             val smashes = transaction(bot.db) {
                 PollTable.selectAll().where {
@@ -179,7 +185,7 @@ class PokeCommands(
             if (format == "count") {
                 event.hook.sendMessage(
                     "`$smashes` server(s) have voted to smash `${
-                        bot.map[pokemonId]!!.replaceFirstChar(
+                        bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                             Char::titlecase
                         )
                     }`"
@@ -193,7 +199,7 @@ class PokeCommands(
                 if (total == 0L)
                     event.hook.sendMessage(
                         "No server has completed a poll for `${
-                            bot.map[pokemonId]!!.replaceFirstChar(
+                            bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                                 Char::titlecase
                             )
                         }`"
@@ -218,7 +224,7 @@ class PokeCommands(
                 if (total == 0L)
                     event.hook.sendMessage(
                         "No server has completed a poll for `${
-                            bot.map[pokemonId]!!.replaceFirstChar(
+                            bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                                 Char::titlecase
                             )
                         }`"
@@ -226,7 +232,7 @@ class PokeCommands(
                 else
                     event.hook.sendMessage(
                         "`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
-                            bot.map[pokemonId]
+                            bot.pokemonMap[pokemonId]
                         } have been for smash"
                     )
                         .queue()
@@ -236,6 +242,7 @@ class PokeCommands(
 
     @GuildOnly
     @Command("smash server totals <info> <format>")
+    @CommandDescription("Get this server's total smash data.")
     fun smashServerTotalCommand(
         interaction: JDAInteraction,
         @Argument(
@@ -295,6 +302,7 @@ class PokeCommands(
 
     @GuildOnly
     @Command("smash server pokemon <info> <format> <pokemon>")
+    @CommandDescription("Get this server's smash data on the specified pokemon. Due to api shenanigans, using the national dex number is suggested")
     fun smashServerPokemonCommand(
         interaction: JDAInteraction,
         @Argument(
@@ -315,7 +323,7 @@ class PokeCommands(
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
-        val pokemonId = pokemon.toIntOrNull() ?: bot.map.inverse()[pokemon.lowercase()]!!
+        val pokemonId = pokemon.toIntOrNull() ?: bot.pokemonMap.inverse()[pokemon.lowercase()]!!
         if (info == "polls") {
             val smashes = transaction(bot.db) {
                 PollTable.selectAll().where {
@@ -326,7 +334,7 @@ class PokeCommands(
             if (format == "count") {
                 event.hook.sendMessage(
                     "`$smashes` server(s) have voted to smash `${
-                        bot.map[pokemonId]!!.replaceFirstChar(
+                        bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                             Char::titlecase
                         )
                     }`"
@@ -340,7 +348,7 @@ class PokeCommands(
                 if (total == 0L)
                     event.hook.sendMessage(
                         "No server has completed a poll for `${
-                            bot.map[pokemonId]!!.replaceFirstChar(
+                            bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                                 Char::titlecase
                             )
                         }`"
@@ -369,7 +377,7 @@ class PokeCommands(
                 if (total == 0L)
                     event.hook.sendMessage(
                         "No server has completed a poll for `${
-                            bot.map[pokemonId]!!.replaceFirstChar(
+                            bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                                 Char::titlecase
                             )
                         }`"
@@ -377,7 +385,7 @@ class PokeCommands(
                 else
                     event.hook.sendMessage(
                         "`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
-                            bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)
+                            bot.pokemonMap[pokemonId]!!.replaceFirstChar(Char::titlecase)
                         } have been for smash"
                     )
                         .queue()
@@ -386,6 +394,7 @@ class PokeCommands(
     }
 
     @Command("pass global totals <info> <format>")
+    @CommandDescription("Get global total pass data")
     fun passGlobalTotalCommand(
         interaction: JDAInteraction,
         @Argument(
@@ -437,6 +446,7 @@ class PokeCommands(
 
     @GuildOnly
     @Command("pass server totals <info> <format>")
+    @CommandDescription("Get this server's total pass data.")
     fun passServerTotalCommand(
         interaction: JDAInteraction,
         @Argument(
@@ -495,6 +505,7 @@ class PokeCommands(
     }
 
     @Command("pass global pokemon <info> <format> <pokemon>")
+    @CommandDescription("Get global pass data on the specified pokemon. Due to api shenanigans, using the national dex number is suggested")
     fun passGlobalPokemonCommand(
         interaction: JDAInteraction,
         @Argument(
@@ -515,7 +526,7 @@ class PokeCommands(
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
-        val pokemonId = pokemon.toIntOrNull() ?: bot.map.inverse()[pokemon.lowercase()]!!
+        val pokemonId = pokemon.toIntOrNull() ?: bot.pokemonMap.inverse()[pokemon.lowercase()]!!
         if (info == "polls") {
             val smashes = transaction(bot.db) {
                 PollTable.selectAll().where {
@@ -525,7 +536,7 @@ class PokeCommands(
             if (format == "count") {
                 event.hook.sendMessage(
                     "`$smashes` server(s) have voted to pass `${
-                        bot.map[pokemonId]!!.replaceFirstChar(
+                        bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                             Char::titlecase
                         )
                     }`"
@@ -539,7 +550,7 @@ class PokeCommands(
                 if (total == 0L)
                     event.hook.sendMessage(
                         "No server has completed a poll for `${
-                            bot.map[pokemonId]!!.replaceFirstChar(
+                            bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                                 Char::titlecase
                             )
                         }`"
@@ -557,7 +568,7 @@ class PokeCommands(
             if (format == "count") {
                 event.hook.sendMessage(
                     "There have been `$smashes` votes to pass ${
-                        bot.map[pokemonId]!!.replaceFirstChar(
+                        bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                             Char::titlecase
                         )
                     }"
@@ -572,7 +583,7 @@ class PokeCommands(
                 if (total == 0L)
                     event.hook.sendMessage(
                         "No server has completed a poll for `${
-                            bot.map[pokemonId]!!.replaceFirstChar(
+                            bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                                 Char::titlecase
                             )
                         }`"
@@ -580,7 +591,7 @@ class PokeCommands(
                 else
                     event.hook.sendMessage(
                         "`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
-                            bot.map[pokemonId]
+                            bot.pokemonMap[pokemonId]
                         } have been for pass"
                     )
                         .queue()
@@ -590,6 +601,7 @@ class PokeCommands(
 
     @GuildOnly
     @Command("pass server pokemon <info> <format> <pokemon>")
+    @CommandDescription("Get this server's pass data on the specified pokemon. Due to api shenanigans, using the national dex number is suggested")
     fun passServerPokemonCommand(
         interaction: JDAInteraction,
         @Argument(
@@ -610,7 +622,7 @@ class PokeCommands(
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
-        val pokemonId = pokemon.toIntOrNull() ?: bot.map.inverse()[pokemon.lowercase()]!!
+        val pokemonId = pokemon.toIntOrNull() ?: bot.pokemonMap.inverse()[pokemon.lowercase()]!!
         if (info == "polls") {
             val smashes = transaction(bot.db) {
                 PollTable.selectAll().where {
@@ -621,7 +633,7 @@ class PokeCommands(
             if (format == "count") {
                 event.hook.sendMessage(
                     "`$smashes` server(s) have voted to pass `${
-                        bot.map[pokemonId]!!.replaceFirstChar(
+                        bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                             Char::titlecase
                         )
                     }`"
@@ -635,7 +647,7 @@ class PokeCommands(
                 if (total == 0L)
                     event.hook.sendMessage(
                         "This server has not completed a poll for `${
-                            bot.map[pokemonId]!!.replaceFirstChar(
+                            bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                                 Char::titlecase
                             )
                         }`"
@@ -643,7 +655,7 @@ class PokeCommands(
                 else
                     event.hook.sendMessage(
                         "Pass has won `${"%.2f".format((smashes / total) * 100)}`% of the time for ${
-                            bot.map[pokemonId]!!.replaceFirstChar(
+                            bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                                 Char::titlecase
                             )
                         }"
@@ -658,7 +670,7 @@ class PokeCommands(
             if (format == "count") {
                 event.hook.sendMessage(
                     "There have been `$smashes` votes to pass ${
-                        bot.map[pokemonId]!!.replaceFirstChar(
+                        bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                             Char::titlecase
                         )
                     }"
@@ -675,7 +687,7 @@ class PokeCommands(
                 if (total == 0L)
                     event.hook.sendMessage(
                         "This server has not completed a poll for `${
-                            bot.map[pokemonId]!!.replaceFirstChar(
+                            bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                                 Char::titlecase
                             )
                         }`"
@@ -683,7 +695,7 @@ class PokeCommands(
                 else
                     event.hook.sendMessage(
                         "`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
-                            bot.map[pokemonId]!!.replaceFirstChar(Char::titlecase)
+                            bot.pokemonMap[pokemonId]!!.replaceFirstChar(Char::titlecase)
                         } have been for pass"
                     )
                         .queue()
@@ -697,7 +709,7 @@ class PokeCommands(
         interaction: JDAInteraction,
         @Argument(
             value = "pokemon",
-            description = "The pokemon to query."
+            description = "The pokemon to query. Using the national dex number is suggested"
         )
         pokemon: PokemonInfo,
     ) {
@@ -709,10 +721,10 @@ class PokeCommands(
         val pokemonEntity = bot.pokemonEntity(pokemon.id)
         val pollEntity = bot.pollEntity(jdaGuild.idLong, pokemon.id)
 
-        logger.info { "Pokemon ${pokemon.name} (${pokemon.id}) info checked in server ${jdaGuild.name}" }
-
         val species = pokemon.species.fetchInfo()
-        val flavor = species.flavorTexts.find { it.language.name == "en" }!!
+        val flavor = species.flavorTexts.findLast { it.language.name == "en" }!!
+
+        logger.info { "Pokemon ${pokemon.name} (${pokemon.id}) info checked in server ${jdaGuild.name}" }
 
         event.hook.sendMessage {
             embed {
@@ -750,6 +762,45 @@ class PokeCommands(
                 footer {
                     name = "Info for ${pokemon.name.replaceFirstChar { it.titlecase() }} • Pokedex Entry: ${flavor.version.fetchInfo().names.find { it.language.name == "en" }!!.name}"
                 }
+            }
+        }
+    }
+
+    @Command("species info <species>")
+    suspend fun speciesInfoCommand(
+        interaction: JDAInteraction,
+        @Argument("species")
+        species: PokemonSpeciesInfo
+    ) {
+        val event = interaction.interactionEvent() ?: return
+
+        event.deferReply().queue()
+
+        val flavor = species.flavorTexts.find { it.language.name == "en" }!!
+        val generation = species.generation.fetchInfo()
+        val default = species.varieties.find { it.isDefault }!!
+        val groups = species.eggGroups.foldIndexed("") { i, acc, eggGroup ->
+            return@foldIndexed acc + (if (i != 0) ", " else "") + eggGroup.fetchInfo().names.find { it.language.name == "en" }!!.name
+        }
+
+        logger.info { "Species ${species.name} (${species.id}) info checked in server ${interaction.guild()?.name ?: "DMs"}" }
+
+        event.hook.sendMessage {
+            embed {
+                title = species.name.replaceFirstChar { it.titlecase() }
+                color = species.color.colorFromName()
+                url = "https://pokemondb.net/pokedex/%04d".format(species.id)
+                description = flavor.formatFlavorText()
+                thumbnail = default.pokemon.fetchInfo().sprites["front_default"]?.jsonPrimitive?.contentOrNull
+
+                timestamp = Clock.System.now().toJavaInstant()
+
+//                field(name = "Name", value = species.name.replaceFirstChar { it.titlecase() })
+                field(name = "Default Form", value = default.pokemon.name.replaceFirstChar { it.titlecase() })
+                field(name = "Genus", value = species.genera.find { it.language.name == "en" }!!.genus)
+                field(name = "Egg Groups", value = groups)
+
+                footer { name = "First from " + generation.names.find { it.language.name == "en" }!!.name }
             }
         }
     }

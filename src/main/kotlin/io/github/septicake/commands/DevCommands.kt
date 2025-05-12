@@ -65,7 +65,7 @@ class DevCommands(
                     event.deferReply().queue()
                     try {
                         channel.sendMessage(str).queue()
-                        event.hook.sendMessage("Message sent.").queue()
+                        event.hook.sendMessage("Message sent to ${info.name}.").queue()
                         return
                     } catch (e: InsufficientPermissionException) {
                         logger.error { "Could not send message to ${info.name}, lacking permissions" }
@@ -157,5 +157,28 @@ class DevCommands(
             }
         }
         bot.shutdown()
+    }
+
+    @Command("resolve <guild>")
+    @UserPermissions(botOwnerOnly = true)
+    @Command("guild")
+    @CommandDescription("Only usable by bot developer")
+    fun resolveCommand(
+        interaction: JDAInteraction,
+        @Argument("guild", description = "The guild id to resolve")
+        guildId: Long
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+
+        val guild = transaction(bot.db) {
+            GuildEntity.findById(guildId)
+        }
+
+        if (guild == null) {
+            event.hook.sendMessage("Guild \"$guildId\" does not exist in database").queue()
+        } else {
+            event.hook.sendMessage("Guild \"$guildId\" resolves to ${guild.name}")
+        }
     }
 }

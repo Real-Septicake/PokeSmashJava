@@ -5,13 +5,15 @@ import kotlinx.serialization.Serializable
 import kotlin.time.Duration.Companion.days
 
 @Serializable
-data class Version(
+data class EggGroup(
     val name: String,
     val url: String
 ) {
-    private val versionCache = Cache.Builder<String, VersionInfo>().expireAfterWrite(7.days).build()
+    private val cache = Cache.Builder<String, EggGroupInfo>().expireAfterWrite(7.days).build()
 
-    suspend fun fetchInfo(): VersionInfo {
-        return versionCache.get(url) { PokeApi.request(url) }
+    suspend fun fetchInfo(): EggGroupInfo {
+        return cache.get(url) {
+            PokeApi.request(url)
+        }
     }
 }

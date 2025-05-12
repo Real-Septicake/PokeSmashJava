@@ -14,6 +14,7 @@ import io.github.septicake.cloud.annotations.Pokemon
 import io.github.septicake.cloud.annotations.RequireOptions
 import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.cloud.parser.PokemonInfoParser
+import io.github.septicake.cloud.parser.SpeciesInfoParser
 import io.github.septicake.cloud.postprocess.ChannelRestrictionPostprocessor
 import io.github.septicake.cloud.postprocess.CommandsEnabledPostprocessor
 import io.github.septicake.cloud.postprocess.GuildOnlyPostprocessor
@@ -76,7 +77,8 @@ class PokeSmashBot(builder: JDABuilder) {
 
     var commandsEnabled = true
 
-    val map: BiMap<Int, String> = HashBiMap.create(1000)
+    val pokemonMap: BiMap<Int, String> = HashBiMap.create(1000)
+    val speciesMap: BiMap<Int, String> = HashBiMap.create(1000)
 
     val commandManager = JDA5CommandManager(
         ExecutionCoordinator.asyncCoordinator(),
@@ -90,6 +92,7 @@ class PokeSmashBot(builder: JDABuilder) {
         registerCommandPostProcessor(CommandsEnabledPostprocessor<JDAInteraction>(this@PokeSmashBot))
 
         parserRegistry().registerParser(parserDescriptor(PokemonInfoParser(this@PokeSmashBot)))
+        parserRegistry().registerParser(parserDescriptor(SpeciesInfoParser(this@PokeSmashBot)))
     }
 
     val annotationParser = AnnotationParser(commandManager, JDAInteraction::class.java).apply {
@@ -131,7 +134,7 @@ class PokeSmashBot(builder: JDABuilder) {
     suspend fun start() {
         logger.info { "Starting PokeSmashOrPass bot" }
 
-        loadMap()
+        loadMaps()
 
         ClassGraph()
             .enableAllInfo()
@@ -194,7 +197,10 @@ class PokeSmashBot(builder: JDABuilder) {
         val trigger = TriggerBuilder.newTrigger()
             .withIdentity("PollTrigger")
             .startNow()
-            .withSchedule(CronScheduleBuilder.cronSchedule("0 0 * * * ?"))
+            .withSchedule(CronScheduleBuilder
+                .cronSchedule("0 0 * * * ?")
+                .withMisfireHandlingInstructionFireAndProceed()
+            )
             .forJob(PokeSmashConstants.PollCheckIdentity)
             .build()
 
@@ -225,16 +231,26 @@ class PokeSmashBot(builder: JDABuilder) {
             removeShutdownHook()
     }
 
-    private fun loadMap() {
+    private fun loadMaps() {
         logger.info { "Loading pokemon map" }
 
         this::class.java.getResourceAsStream("/pokemon_map.txt")!!.bufferedReader().useLines { lines ->
             lines.withIndex().forEach {
-                map[it.index + 1] = it.value
+                pokemonMap[it.index + 1] = it.value
             }
         }
 
         logger.info { "Pokemon map loaded" }
+
+        logger.info { "Loading species map" }
+
+        this::class.java.getResourceAsStream("/species_map.txt")!!.bufferedReader().useLines { lines ->
+            lines.withIndex().forEach {
+                speciesMap[it.index + 1] = it.value
+            }
+        }
+
+        logger.info { "Species map loaded" }
     }
 
     fun userWhitelisted(guild: Guild, user: Long): Boolean {
@@ -304,8 +320,7 @@ class PokeSmashBot(builder: JDABuilder) {
             } ?: throw ServerNotPopulatedException()
             val pokemonInfo = transaction(db) {
                 PokemonEntity.findById(pokemonId)
-                    ?: PokemonEntity.new {
-                        id._value = pokemonId
+                    ?: PokemonEntity.new(pokemonId) {
                         smashWins = 0
                         smashes = 0
                         passWins = 0

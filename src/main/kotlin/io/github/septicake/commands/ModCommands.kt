@@ -8,6 +8,7 @@ import io.github.septicake.cloud.annotations.*
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.WhitelistEntity
 import io.github.septicake.db.WhitelistTable
+import io.github.septicake.pokeapi.PokemonInfo
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import net.dv8tion.jda.api.entities.User
@@ -125,8 +126,7 @@ class ModCommands(
                 return
             }
             transaction(bot.db) {
-                GuildEntity.new {
-                    this.id._value = event.guild!!.idLong
+                GuildEntity.new(event.guild!!.idLong) {
                     this.name = event.guild!!.name
                     this.channel = channel.idLong
                     this.polls = polls
@@ -151,7 +151,7 @@ class ModCommands(
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().setEphemeral(true).queue()
-        val pokemonId = pokemon.toIntOrNull() ?: bot.map.inverse()[pokemon.lowercase()]!!
+        val pokemonId = pokemon.toIntOrNull() ?: bot.pokemonMap.inverse()[pokemon.lowercase()]!!
         try {
             bot.setPollResults(event.guild!!.idLong, pokemonId, smashes, passes)
             event.hook.sendMessage("Poll result set.").queue()
@@ -167,13 +167,12 @@ class ModCommands(
         interaction: JDAInteraction,
         @Argument("pokemon")
         @Pokemon
-        pokemon: String
+        pokemon: PokemonInfo
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().setEphemeral(true).queue()
-        val pokemonId = pokemon.toIntOrNull() ?: bot.map.inverse()[pokemon.lowercase()]!!
         try {
-            bot.removePollResults(event.guild!!.idLong, pokemonId)
+            bot.removePollResults(event.guild!!.idLong, pokemon.id)
             event.hook.sendMessage("Poll result removed.").queue()
         } catch(e: PokeSmashBot.ServerNotPopulatedException) {
             event.hook.sendMessage("Server has not been populated yet.").queue()

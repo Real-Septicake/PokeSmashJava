@@ -25,23 +25,23 @@ class PollCheck : Job {
         var finished = 0
         var total = 0
 
-        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).toJavaLocalDateTime()
+        val now = Clock.System.now().toLocalDateTime(TimeZone.UTC).toJavaLocalDateTime()
 
         val delete: ArrayList<PollEndEntity> = ArrayList()
 
         val bot = p0.scheduler.context["Bot"] as PokeSmashBot
         transaction(bot.db) {
             PollEndTable.selectAll().forEach {
-                total++;
+                total++
                 if(now.isAfter(it[PollEndTable.finish].toJavaLocalDateTime())) {
                     val guild = bot.jda.getGuildById(it[PollEndTable.server]) ?: return@forEach
                     val channel = guild.getTextChannelById(bot.guildEntity(guild).channel!!) as MessageChannel? ?: return@forEach
                     val poll = channel.retrieveMessageById(it[PollEndTable.id].value).complete().poll ?: return@forEach
                     bot.setPollResults(guild.idLong,
-                        bot.map.inverse()[poll.question.text.lowercase()]!!,
+                        bot.pokemonMap.inverse()[poll.question.text.lowercase()]!!,
                         poll.answers[0].votes.toLong(),
                         poll.answers[1].votes.toLong())
-                    delete.add(PollEndEntity(it[PollEndTable.id]))
+                    delete.add(PollEndEntity.findById(it[PollEndTable.id])!!)
                     finished++
                 } else {
                     waiting++

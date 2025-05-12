@@ -9,9 +9,14 @@ data class PokemonSpeciesInfo(
     val name: String,
     val order: Int,
     val color: PokemonColorInfo,
+    @SerialName("egg_groups")
+    val eggGroups: List<EggGroup>,
     val names: List<LocalizedName> = listOf(),
     @SerialName("flavor_text_entries")
     val flavorTexts: List<FlavorText>,
+    val genera: List<Genus>,
+    val generation: Generation,
+    val varieties: List<Variety>,
 ) {
     @Serializable
     data class FlavorText(
@@ -21,7 +26,20 @@ data class PokemonSpeciesInfo(
         val version: Version
     ) {
         fun formatFlavorText(): String {
-            return flavorText.replace('\u000c', '\n')
+            return flavorText.replace("\u000c", "\n")
         }
     }
+
+    @Serializable
+    data class Variety(
+        @SerialName("is_default")
+        val isDefault: Boolean,
+        val pokemon: Pokemon
+    )
+
+    @Serializable
+    data class Genus(
+        val genus: String,
+        val language: Language
+    )
 }
