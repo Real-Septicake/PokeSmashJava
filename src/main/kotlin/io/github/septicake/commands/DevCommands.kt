@@ -8,7 +8,6 @@ import io.github.septicake.cloud.annotations.CommandParams
 import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.GuildTable
-import io.github.septicake.db.logger
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException
 import org.incendo.cloud.annotation.specifier.Greedy
 import org.incendo.cloud.annotations.Argument
@@ -17,10 +16,12 @@ import org.incendo.cloud.annotations.CommandDescription
 import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.error
+import org.slf4j.kotlin.getLogger
 
 class DevCommands(
     private val bot: PokeSmashBot
 ) {
+    val logger by getLogger()
 
     @Command("allow commands <val>")
     @UserPermissions(botOwnerOnly = true)

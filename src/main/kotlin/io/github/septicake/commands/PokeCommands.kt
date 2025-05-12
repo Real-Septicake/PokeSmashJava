@@ -7,7 +7,6 @@ import io.github.septicake.cloud.annotations.*
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.PollResult
 import io.github.septicake.db.PollTable
-import io.github.septicake.db.logger
 import io.github.septicake.pokeapi.PokeApi
 import io.github.septicake.pokeapi.PokemonInfo
 import io.github.septicake.pokeapi.PokemonSpeciesInfo
@@ -26,12 +25,14 @@ import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.slf4j.kotlin.getLogger
 import org.slf4j.kotlin.info
 import kotlin.math.min
 
 class PokeCommands(
     private val bot: PokeSmashBot
 ) {
+    val logger by getLogger()
 
     @Command("reset")
     @GuildOnly

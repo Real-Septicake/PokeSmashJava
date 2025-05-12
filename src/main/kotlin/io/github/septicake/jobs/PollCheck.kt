@@ -5,7 +5,6 @@ import io.github.septicake.db.PollEndEntity
 import io.github.septicake.db.PollEndTable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toLocalDateTime
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import org.jetbrains.exposed.sql.selectAll
@@ -25,27 +24,26 @@ class PollCheck : Job {
         var finished = 0
         var total = 0
 
-        val now = Clock.System.now().toLocalDateTime(TimeZone.UTC).toJavaLocalDateTime()
+        val now = Clock.System.now().toLocalDateTime(TimeZone.UTC)
 
         val delete: ArrayList<PollEndEntity> = ArrayList()
 
         val bot = p0.scheduler.context["Bot"] as PokeSmashBot
         transaction(bot.db) {
-            PollEndTable.selectAll().forEach {
+            PollEndTable.selectAll().forEach { end ->
                 total++
-                if(now.isAfter(it[PollEndTable.finish].toJavaLocalDateTime())) {
-                    val guild = bot.jda.getGuildById(it[PollEndTable.server]) ?: return@forEach
+                if(end[PollEndTable.finish] > now) {
+                    val guild = bot.jda.getGuildById(end[PollEndTable.server]) ?: return@forEach
                     val channel = guild.getTextChannelById(bot.guildEntity(guild).channel!!) as MessageChannel? ?: return@forEach
-                    val poll = channel.retrieveMessageById(it[PollEndTable.id].value).complete().poll ?: return@forEach
+                    val poll = channel.retrieveMessageById(end[PollEndTable.id].value).complete().poll ?: return@forEach
                     bot.setPollResults(guild.idLong,
                         bot.pokemonMap.inverse()[poll.question.text.lowercase()]!!,
                         poll.answers[0].votes.toLong(),
                         poll.answers[1].votes.toLong())
-                    delete.add(PollEndEntity.findById(it[PollEndTable.id])!!)
+                    delete.add(PollEndEntity.findById(end[PollEndTable.id])!!)
                     finished++
                 } else {
                     waiting++
-                    return@forEach
                 }
             }
         }

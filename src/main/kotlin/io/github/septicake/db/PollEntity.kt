@@ -8,9 +8,6 @@ import org.jetbrains.exposed.sql.DenseRank
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.SortOrder
-import org.slf4j.kotlin.getLogger
-
-val logger by getLogger()
 
 object PollTable : IntIdTable("votes") {
     val guild = long("guildId").index()
