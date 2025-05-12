@@ -12,8 +12,8 @@ import org.jetbrains.exposed.sql.SortOrder
 object PollTable : IntIdTable("votes") {
     val guild = long("guildId").index()
     val pokemon = integer("pokeId").index()
-    val smashes = long("smashes")
-    val passes = long("passes")
+    val smashes = long("smashes").default(0)
+    val passes = long("passes").default(0)
     val result = enumeration<PollResult>("result").index()
 
     val rank = DenseRank().over().orderBy(passes to SortOrder.DESC)
@@ -40,6 +40,5 @@ class PollEntity(id: EntityID<Int>) : IntEntity(id) {
 
 enum class PollResult(val value: Int) {
     PASSED(0),
-    SMASHED(1),
-    ERROR(-1)
+    SMASHED(1)
 }

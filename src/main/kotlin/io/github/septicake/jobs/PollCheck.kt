@@ -1,56 +1,81 @@
 package io.github.septicake.jobs
 
+import dev.minn.jda.ktx.coroutines.await
 import io.github.septicake.PokeSmashBot
 import io.github.septicake.db.PollEndEntity
-import io.github.septicake.db.PollEndTable
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.quartz.Job
 import org.quartz.JobExecutionContext
 import org.slf4j.kotlin.debug
 import org.slf4j.kotlin.getLogger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.Clock
 
 class PollCheck : Job {
     private val logger by getLogger()
 
-    override fun execute(p0: JobExecutionContext?) {
-        p0 ?: return
-
+    override fun execute(context: JobExecutionContext) {
         var waiting = 0
         var finished = 0
         var total = 0
 
-        val now = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+        val now = Clock.System.now()
+        val delete = mutableListOf<PollEndEntity>()
+        val bot = context.scheduler.context["Bot"] as PokeSmashBot
 
-        val delete: ArrayList<PollEndEntity> = ArrayList()
+        runBlocking(Dispatchers.IO) {
+            newSuspendedTransaction(db = bot.db) {
+                PollEndEntity.all().map { entity ->
+                    async {
+                        total++
 
-        val bot = p0.scheduler.context["Bot"] as PokeSmashBot
-        transaction(bot.db) {
-            PollEndTable.selectAll().forEach { end ->
-                total++
-                if(end[PollEndTable.finish] > now) {
-                    val guild = bot.jda.getGuildById(end[PollEndTable.server]) ?: return@forEach
-                    val channel = guild.getTextChannelById(bot.guildEntity(guild).channel!!) as MessageChannel? ?: return@forEach
-                    val poll = channel.retrieveMessageById(end[PollEndTable.id].value).complete().poll ?: return@forEach
-                    bot.setPollResults(guild.idLong,
-                        bot.pokemonMap.inverse()[poll.question.text.lowercase()]!!,
-                        poll.answers[0].votes.toLong(),
-                        poll.answers[1].votes.toLong())
-                    delete.add(PollEndEntity.findById(end[PollEndTable.id])!!)
-                    finished++
-                } else {
-                    waiting++
-                }
+                        if (entity.finish > now) {
+                            val guild = bot.jda.getGuildById(entity.server)
+
+                            if (guild == null) {
+                                delete += entity
+                                return@async
+                            }
+
+                            val channel = guild.getTextChannelById(bot.guildEntity(guild).channel!!)
+
+                            if (channel == null) {
+                                delete += entity
+                                return@async
+                            }
+
+                            val poll = channel.retrieveMessageById(entity.id.value).await().poll
+
+                            if (poll == null) {
+                                delete += entity
+                                return@async
+                            }
+
+                            bot.setPollResults(
+                                guild.idLong,
+                                bot.pokemonMap.inverse()[poll.question.text.lowercase()]!!,
+                                poll.answers[0].votes.toLong(),
+                                poll.answers[1].votes.toLong()
+                            )
+
+                            delete += entity
+
+                            finished++
+                        } else {
+                            waiting++
+                        }
+                    }
+                }.joinAll()
             }
         }
 
         transaction(bot.db) {
-            delete.forEach {
-                it.delete()
+            for (entity in delete) {
+                entity.delete()
             }
         }
 

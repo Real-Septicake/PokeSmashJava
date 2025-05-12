@@ -22,7 +22,15 @@ import io.github.septicake.cloud.postprocess.UserPermissionPostprocessor
 import io.github.septicake.cloud.preprocess.PokeCommandPreprocessor
 import io.github.septicake.cloud.preprocess.PokemonComponentPreprocessor
 import io.github.septicake.cloud.preprocess.RequireOptionComponentPreprocessor
-import io.github.septicake.db.*
+import io.github.septicake.db.GuildEntity
+import io.github.septicake.db.GuildTable
+import io.github.septicake.db.PokemonEntity
+import io.github.septicake.db.PokemonTable
+import io.github.septicake.db.PollEndTable
+import io.github.septicake.db.PollEntity
+import io.github.septicake.db.PollResult
+import io.github.septicake.db.PollTable
+import io.github.septicake.db.WhitelistTable
 import io.github.septicake.jobs.PollCheck
 import io.github.septicake.listeners.MessageUpdateListener
 import io.github.septicake.util.ScheduledThreadPool
@@ -30,10 +38,6 @@ import io.github.septicake.util.currentThread
 import io.github.septicake.util.getEnv
 import io.github.septicake.util.processors
 import io.github.septicake.util.runtime
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Runnable
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.asCoroutineDispatcher
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.Guild
 import org.incendo.cloud.annotations.AnnotationParser
@@ -51,8 +55,12 @@ import org.jetbrains.exposed.sql.DatabaseConfig
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.quartz.*
+import org.quartz.CronScheduleBuilder
+import org.quartz.JobBuilder
+import org.quartz.Scheduler
+import org.quartz.TriggerBuilder
 import org.quartz.impl.StdSchedulerFactory
 import org.slf4j.kotlin.debug
 import org.slf4j.kotlin.getLogger
@@ -60,16 +68,20 @@ import org.slf4j.kotlin.info
 import java.util.concurrent.ThreadFactory
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
 
 
-class PokeSmashBot(builder: JDABuilder) {
+class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
     private val logger by getLogger()
 
     val scheduledThreadPool = ScheduledThreadPool((runtime.processors - 1).coerceAtLeast(1), PokeSmashThreadFactory)
 
     val coroutineDispatcher = scheduledThreadPool.asCoroutineDispatcher()
 
-    val scope = CoroutineScope(SupervisorJob() + coroutineDispatcher)
+    override val coroutineContext = SupervisorJob() + coroutineDispatcher
 
     val homeServer = getEnv("HOME_SERVER")?.toLong()
     val testingChannel = getEnv("TESTING_CHANNEL")?.toLong()
@@ -197,9 +209,10 @@ class PokeSmashBot(builder: JDABuilder) {
         val trigger = TriggerBuilder.newTrigger()
             .withIdentity("PollTrigger")
             .startNow()
-            .withSchedule(CronScheduleBuilder
-                .cronSchedule("0 0 * * * ?")
-                .withMisfireHandlingInstructionFireAndProceed()
+            .withSchedule(
+                CronScheduleBuilder
+                    .cronSchedule("0 0 * * * ?")
+                    .withMisfireHandlingInstructionFireAndProceed()
             )
             .forJob(PokeSmashConstants.PollCheckIdentity)
             .build()
@@ -264,95 +277,62 @@ class PokeSmashBot(builder: JDABuilder) {
         return userServerWhitelisted(guild.idLong, user)
     }
 
-    fun setPollResults(guildId: Long, pokemonId: Int, smashVotes: Long, passVotes: Long) {
+    suspend fun setPollResults(guildId: Long, pokemonId: Int, smashVotes: Long, passVotes: Long) {
         logger.debug { "Set $pokemonId poll in $guildId to smashes: $smashVotes and passes: $passVotes" }
         val poll = pollEntity(guildId, pokemonId)
-        if (poll != null) {
-            val guildInfo = transaction(db) {
-                GuildEntity.findById(guildId)
-            }!!
-            val pokemonInfo = transaction(db) {
-                PokemonEntity.findById(pokemonId)
-            }!!
-            val prevResult = poll.result
+        newSuspendedTransaction(db = db) {
+            val guildInfo = GuildEntity.findById(guildId) ?: throw ServerNotPopulatedException()
+            val pokemonInfo = PokemonEntity.findById(pokemonId) ?: PokemonEntity.new(pokemonId) {}
 
-            // Remove results from previous poll
-            if (prevResult == PollResult.SMASHED) {
-                transaction(db) {
-                    guildInfo.smashes -= 1
-                    pokemonInfo.smashWins -= 1
+            val pollResult = if (passVotes >= smashVotes) PollResult.PASSED else PollResult.SMASHED
+
+            if (poll == null) {
+                when (pollResult) {
+                    PollResult.SMASHED -> {
+                        guildInfo.smashes += 1
+                        pokemonInfo.smashWins += 1
+                    }
+
+                    PollResult.PASSED -> {
+                        guildInfo.passes += 1
+                        pokemonInfo.passWins += 1
+                    }
                 }
-            } else {
-                transaction(db) {
-                    guildInfo.passes -= 1
-                    pokemonInfo.passWins -= 1
+            } else if (pollResult != poll.result) {
+                when (poll.result) {
+                    PollResult.SMASHED -> {
+                        guildInfo.smashes -= 1
+                        pokemonInfo.smashWins -= 1
+                        guildInfo.passes += 1
+                        pokemonInfo.passWins += 1
+                    }
+
+                    PollResult.PASSED -> {
+                        guildInfo.passes -= 1
+                        pokemonInfo.passWins -= 1
+                        guildInfo.smashes += 1
+                        pokemonInfo.smashWins += 1
+                    }
                 }
             }
-            // Extract duplicate transaction code
-            transaction(db) {
+
+            if (poll != null) {
                 pokemonInfo.smashes -= poll.smashes
                 pokemonInfo.passes -= poll.passes
             }
 
-            val newResult = if (passVotes >= smashVotes) PollResult.PASSED else PollResult.SMASHED
-            if (newResult == PollResult.SMASHED) {
-                transaction(db) {
-                    guildInfo.smashes += 1
-                    pokemonInfo.smashWins += 1
-                }
-            } else {
-                transaction(db) {
-                    guildInfo.passes += 1
-                    pokemonInfo.passWins += 1
-                }
-            }
-            // Extract duplicate transaction code
-            transaction(db) {
-                pokemonInfo.smashes += smashVotes
-                pokemonInfo.passes += passVotes
-                poll.smashes = smashVotes
-                poll.passes = passVotes
-                poll.result = newResult
-            }
-        } else {
-            val guildInfo = transaction(db) {
-                GuildEntity.findById(guildId)
-            } ?: throw ServerNotPopulatedException()
-            val pokemonInfo = transaction(db) {
-                PokemonEntity.findById(pokemonId)
-                    ?: PokemonEntity.new(pokemonId) {
-                        smashWins = 0
-                        smashes = 0
-                        passWins = 0
-                        passes = 0
-                    }
-            }
-            val result = if (passVotes >= smashVotes) PollResult.PASSED else PollResult.SMASHED
-            if (result == PollResult.SMASHED) {
-                transaction(db) {
-                    pokemonInfo.smashWins += 1
-                    guildInfo.smashes += 1
-                }
-            } else {
-                transaction(db) {
-                    pokemonInfo.passWins += 1
-                    guildInfo.passes += 1
-                }
-            }
-            transaction(db) {
-                pokemonInfo.smashes += smashVotes
-                pokemonInfo.passes += passVotes
+            val poll = poll ?: PollEntity.new {
+                guild = guildId
+                pokemon = pokemonId
+                result = pollResult
             }
 
-            transaction(db) {
-                PollEntity.new {
-                    guild = guildId
-                    pokemon = pokemonId
-                    smashes = smashVotes
-                    passes = passVotes
-                    this.result = result
-                }
-            }
+            poll.smashes = smashVotes
+            poll.passes = passVotes
+
+            pokemonInfo.smashes += smashVotes
+            pokemonInfo.passes += passVotes
+            poll.result = pollResult
         }
     }
 

@@ -1,29 +1,29 @@
 [versions]
-kotlin = "2.0.10"
-kotlinx-serialization = "1.7.1"
-kotlinx-coroutines = "1.8.1"
+kotlin = "2.1.20"
+kotlinx-serialization = "1.8.1"
+kotlinx-coroutines = "1.10.2"
 kotlinx-uuid = "0.0.26"
 
 nyx = "0.2.3"
 
 axion-release = "1.17.2"
 
-slf4j = "2.0.16"
-slf4k = "0.5.3"
-logback = "1.5.7"
+slf4j = "2.0.17"
+slf4k = "0.5.4"
+logback = "1.5.18"
 
-guava = "33.3.0-jre"
+guava = "33.4.8-jre"
 guava-kotlin = "0.1.2"
 
-jda = "5.0.2"
+jda = "5.5.1"
 
-jetbrains-exposed = "0.53.0"
+jetbrains-exposed = "0.61.0"
 
 fuel = "2.3.1"
 
 cloud = "2.0.0"
 
-cache4k = "0.13.0"
+cache4k = "0.14.0"
 
 quartz = "2.5.0"
 
@@ -50,7 +50,7 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 kotlinx-coroutines-debug = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-debug", version.ref = "kotlinx-coroutines" }
 
 # Kotlinx Misc. Libraries
-kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version = "0.6.0" }
+kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version = "0.6.2" }
 kotlinx-uuid = { group = "app.softwork", name = "kotlinx-uuid-core", version.ref = "kotlinx-uuid" }
 kotlinx-uuid-exposed = { group = "app.softwork", name = "kotlinx-uuid-exposed", version.ref = "kotlinx-uuid" }
 
@@ -78,20 +78,20 @@ guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
 ## A wrapper around Guava to make it more idiomatic in kotlin
 guava-kotlin = { group = "ca.solo-studios", name = "guava-kotlin", version.ref = "guava-kotlin" }
 
-classgraph = {group = "io.github.classgraph", name = "classgraph", version = "4.8.174"}
+classgraph = { group = "io.github.classgraph", name = "classgraph", version = "4.8.179" }
 
 jda = { group = "net.dv8tion", name = "JDA", version.ref = "jda" }
 jda-ktx = {group = "club.minnced", name = "jda-ktx", version = "0.12.0"}
 
 # HikariCP
 ## A lightweight and "zero-overhead" production ready JDBC connection pool
-hikaricp = { group = "com.zaxxer", name = "HikariCP", version = "5.1.0" }
+hikaricp = { group = "com.zaxxer", name = "HikariCP", version = "6.3.0" }
 
 # SQLite
 ## SQLite JDBC Driver
-sqlite = { group = "org.xerial", name = "sqlite-jdbc", version = "3.46.1.0" }
+sqlite = { group = "org.xerial", name = "sqlite-jdbc", version = "3.49.1.0" }
 
-mariadb = {group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "3.4.1"}
+mariadb = { group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "3.5.3" }
 
 # Exposed
 ## An ORM framework for Kotlin
