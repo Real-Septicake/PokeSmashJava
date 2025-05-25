@@ -20,15 +20,15 @@ private lateinit var shutdownThread: Thread
 
 fun main() {
     try {
-        val token = getEnv("DISCORD_TOKEN")
+        val token = getEnv("DISCORD_TOKEN")!!
 
         val jdaBuilder = JDABuilder.createLight(token).apply {
             injectKTX()
 
             intents += listOf(
                 GatewayIntent.GUILD_MESSAGES,
-                GatewayIntent.MESSAGE_CONTENT,
-                GatewayIntent.GUILD_MESSAGE_POLLS,
+                GatewayIntent.MESSAGE_CONTENT,     // these may not even be necessary in the bot's current state
+                GatewayIntent.GUILD_MESSAGE_POLLS, //
             )
 
             setStatus(OnlineStatus.ONLINE)

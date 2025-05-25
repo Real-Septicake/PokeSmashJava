@@ -118,11 +118,6 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
         registerBuilderModifier(CommandsEnabled::class.java, PokeMeta::commandsEnabledModifier)
         registerBuilderModifier(CommandParams::class.java, PokeMeta::commandParamsModifier)
 
-        // by default all commands should be deferred & ephemeral
-        // registerBuilderDecorator { builder ->
-        //     builder.apply(ReplySetting.defer(true))
-        // }
-
         registerPreprocessorMapper(RequireOptions::class.java) { annotation ->
             RequireOptionComponentPreprocessor(annotation.options)
         }
@@ -169,14 +164,14 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
                 jdbcUrl = "jdbc:sqlite:./test.db"
                 driverClassName = "org.sqlite.JDBC"
             } else {
-                val dbHost = getEnv("DB_HOST")
-                val dbPort = getEnv("DB_PORT")
-                val dbName = getEnv("DB_NAME")
+                val dbHost = getEnv("DB_HOST")!!
+                val dbPort = getEnv("DB_PORT")!!
+                val dbName = getEnv("DB_NAME")!!
 
                 jdbcUrl = "jdbc:mariadb://$dbHost:$dbPort/$dbName?allowPublicKeyRetrieval=true"
                 driverClassName = "org.mariadb.jdbc.Driver"
-                username = getEnv("DB_USER")
-                password = getEnv("DB_PASSWORD")
+                username = getEnv("DB_USER")!!
+                password = getEnv("DB_PASSWORD")!!
             }
         }
 
@@ -200,7 +195,7 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
 
         jda.awaitReady()
 
-        logger.info { "Bot successfully started" }
+        logger.info { "Bot successfully started with user ${jda.selfUser.name}" }
 
         val job = JobBuilder.newJob(PollCheck::class.java)
             .withIdentity(PokeSmashConstants.PollCheckIdentity)
@@ -282,7 +277,12 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
         val poll = pollEntity(guildId, pokemonId)
         newSuspendedTransaction(db = db) {
             val guildInfo = GuildEntity.findById(guildId) ?: throw ServerNotPopulatedException()
-            val pokemonInfo = PokemonEntity.findById(pokemonId) ?: PokemonEntity.new(pokemonId) {}
+            val pokemonInfo = PokemonEntity.findById(pokemonId) ?: PokemonEntity.new(pokemonId) {
+                smashWins = 0
+                smashes = 0
+                passWins = 0
+                passes = 0
+            }
 
             val pollResult = if (passVotes >= smashVotes) PollResult.PASSED else PollResult.SMASHED
 
