@@ -14,14 +14,18 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.concurrent.atomics.incrementAndFetch
 
 class PollCheck : Job {
     private val logger by getLogger()
 
+    @OptIn(ExperimentalAtomicApi::class)
     override fun execute(context: JobExecutionContext) {
-        var waiting = 0
-        var finished = 0
-        var total = 0
+        val waiting = AtomicInt(0)
+        val finished = AtomicInt(0)
+        val total = AtomicInt(0)
 
         val now = Clock.System.now()
         val delete = mutableListOf<PollEndEntity>()
@@ -31,9 +35,9 @@ class PollCheck : Job {
             newSuspendedTransaction(db = bot.db) {
                 PollEndEntity.all().map { entity ->
                     async {
-                        total++
+                        total.incrementAndFetch()
 
-                        if (entity.finish > now) {
+                        if (now > entity.finish) {
                             val guild = bot.jda.getGuildById(entity.server)
 
                             if (guild == null) {
@@ -64,9 +68,9 @@ class PollCheck : Job {
 
                             delete += entity
 
-                            finished++
+                            finished.incrementAndFetch()
                         } else {
-                            waiting++
+                            waiting.incrementAndFetch()
                         }
                     }
                 }.joinAll()
