@@ -186,7 +186,7 @@ class ModCommands(
     }
 
     @GuildOnly
-    @UserPermissions(guildOwnerOnly = true)
+    @UserPermissions(whitelistOnly = true)
     @Command("message <text>")
     suspend fun messageCommand(
         interaction: JDAInteraction,
@@ -204,6 +204,12 @@ class ModCommands(
                 timestamp = Clock.System.now().toJavaInstant()
                 field("From", interaction.user().name)
                 field("Server", guild.name)
+                field() // alignment
+                field("Status", if (event.user.idLong == guild.ownerIdLong) "Owner" else "Whitelisted")
+                field("Server ID", guild.id)
+                field() // also alignment
+
+                footer { name = "ID: ${interaction.user().id}" }
             }
         }).await()
         event.hook.sendMessage("Message sent").await()
