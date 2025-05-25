@@ -126,7 +126,7 @@ class DevCommands(
         ).queue()
     }
 
-    @Command("shutdown [test]")
+    @Command("shutdown <test>")
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("test")
@@ -158,28 +158,5 @@ class DevCommands(
             }
         }
         bot.shutdown()
-    }
-
-    @Command("resolve <guild>")
-    @UserPermissions(botOwnerOnly = true)
-    @Command("guild")
-    @CommandDescription("Only usable by bot developer")
-    fun resolveCommand(
-        interaction: JDAInteraction,
-        @Argument("guild", description = "The guild id to resolve")
-        guildId: Long
-    ) {
-        val event = interaction.interactionEvent() ?: return
-        event.deferReply().queue()
-
-        val guild = transaction(bot.db) {
-            GuildEntity.findById(guildId)
-        }
-
-        if (guild == null) {
-            event.hook.sendMessage("Guild \"$guildId\" does not exist in database").queue()
-        } else {
-            event.hook.sendMessage("Guild \"$guildId\" resolves to ${guild.name}")
-        }
     }
 }
