@@ -134,7 +134,7 @@ class PokeCommands(
                 val total = transaction(bot.db) {
                     PollTable.selectAll().count()
                 }
-                event.hook.sendMessage("Smash has won `${"%.2f".format((smashes / total) * 100)}`% of the time").queue()
+                event.hook.sendMessage("Smash has won `${"%.2f".format((smashes.toDouble() / total.toDouble()) * 100)}`% of the time").queue()
             }
         } else {
             val smashes = transaction(bot.db) {
@@ -148,7 +148,7 @@ class PokeCommands(
                         it[PollTable.smashes] + it[PollTable.passes]
                     }
                 }
-                event.hook.sendMessage("`${"%.2f".format((smashes / total) * 100)}`% of the total votes have been for smash")
+                event.hook.sendMessage("`${"%.2f".format((smashes.toDouble() / total.toDouble()) * 100)}`% of the total votes have been for smash")
                     .queue()
             }
         }
@@ -206,7 +206,7 @@ class PokeCommands(
                         }`"
                     )
                 else
-                    event.hook.sendMessage("Smash has won `${"%.2f".format((smashes / total) * 100)}`% of the time")
+                    event.hook.sendMessage("Smash has won `${"%.2f".format((smashes.toDouble() / total.toDouble()) * 100)}`% of the time")
                         .queue()
             }
         } else {
@@ -232,7 +232,7 @@ class PokeCommands(
                     )
                 else
                     event.hook.sendMessage(
-                        "`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
+                        "`${"%.2f".format((smashes.toDouble() / total.toDouble()) * 100)}`% of the total votes for ${
                             bot.pokemonMap[pokemonId]
                         } have been for smash"
                     )
@@ -276,7 +276,7 @@ class PokeCommands(
             if (format == "count") {
                 event.hook.sendMessage("Smash has won `${guildInfo.smashes}` times").queue()
             } else {
-                event.hook.sendMessage("Smash has won `${"%.2f".format((guildInfo.smashes / (guildInfo.smashes + guildInfo.passes)) * 100)}`% of the time")
+                event.hook.sendMessage("Smash has won `${"%.2f".format((guildInfo.smashes.toDouble() / (guildInfo.smashes.toDouble() + guildInfo.passes.toDouble())) * 100)}`% of the time")
                     .queue()
             }
         } else {
@@ -295,7 +295,7 @@ class PokeCommands(
                         it[PollTable.smashes] + it[PollTable.passes]
                     }
                 }
-                event.hook.sendMessage("`${"%.2f".format((smashes / total) * 100)}`% of the total votes have been for smash")
+                event.hook.sendMessage("`${"%.2f".format((smashes.toDouble() / total.toDouble()) * 100)}`% of the total votes have been for smash")
                     .queue()
             }
         }
@@ -355,7 +355,7 @@ class PokeCommands(
                         }`"
                     )
                 else
-                    event.hook.sendMessage("Smash has won `${"%.2f".format((smashes / total) * 100)}`% of the time")
+                    event.hook.sendMessage("Smash has won `${"%.2f".format((smashes.toDouble() / total.toDouble()) * 100)}`% of the time")
                         .queue()
             }
         } else {
@@ -385,7 +385,7 @@ class PokeCommands(
                     )
                 else
                     event.hook.sendMessage(
-                        "`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
+                        "`${"%.2f".format((smashes.toDouble() / total.toDouble()) * 100)}`% of the total votes for ${
                             bot.pokemonMap[pokemonId]!!.replaceFirstChar(Char::titlecase)
                         } have been for smash"
                     )
@@ -425,7 +425,7 @@ class PokeCommands(
                 val total = transaction(bot.db) {
                     PollTable.selectAll().count()
                 }
-                event.hook.sendMessage("Pass has won `${"%.2f".format((passes / total) * 100)}`% of the time").queue()
+                event.hook.sendMessage("Pass has won `${"%.2f".format((passes.toDouble() / total.toDouble()) * 100)}`% of the time").queue()
             }
         } else {
             val passes = transaction(bot.db) {
@@ -439,7 +439,7 @@ class PokeCommands(
                         it[PollTable.smashes] + it[PollTable.passes]
                     }
                 }
-                event.hook.sendMessage("`${"%.2f".format((passes / total) * 100)}`% of the total votes have been for pass")
+                event.hook.sendMessage("`${"%.2f".format((passes.toDouble() / total.toDouble()) * 100)}`% of the total votes have been for pass")
                     .queue()
             }
         }
@@ -480,7 +480,7 @@ class PokeCommands(
             if (format == "count") {
                 event.hook.sendMessage("Pass has won `${guildInfo.passes}` times").queue()
             } else {
-                event.hook.sendMessage("Pass has won `${"%.2f".format((guildInfo.passes / (guildInfo.smashes + guildInfo.passes)) * 100)}`% of the time")
+                event.hook.sendMessage("Pass has won `${"%.2f".format((guildInfo.passes.toDouble() / (guildInfo.smashes.toDouble() + guildInfo.passes.toDouble())) * 100)}`% of the time")
                     .queue()
             }
         } else {
@@ -499,7 +499,7 @@ class PokeCommands(
                         it[PollTable.smashes] + it[PollTable.passes]
                     }
                 }
-                event.hook.sendMessage("`${"%.2f".format((passes / total) * 100)}`% of the total votes have been for pass")
+                event.hook.sendMessage("`${"%.2f".format((passes.toDouble() / total.toDouble()) * 100)}`% of the total votes have been for pass")
                     .queue()
             }
         }
@@ -557,7 +557,7 @@ class PokeCommands(
                         }`"
                     )
                 else
-                    event.hook.sendMessage("Pass has won `${"%.2f".format((smashes / total) * 100)}`% of the time")
+                    event.hook.sendMessage("Pass has won `${"%.2f".format((smashes.toDouble() / total.toDouble()) * 100)}`% of the time")
                         .queue()
             }
         } else {
@@ -591,7 +591,7 @@ class PokeCommands(
                     )
                 else
                     event.hook.sendMessage(
-                        "`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
+                        "`${"%.2f".format((smashes.toDouble() / total.toDouble()) * 100)}`% of the total votes for ${
                             bot.pokemonMap[pokemonId]
                         } have been for pass"
                     )
@@ -655,7 +655,7 @@ class PokeCommands(
                     )
                 else
                     event.hook.sendMessage(
-                        "Pass has won `${"%.2f".format((smashes / total) * 100)}`% of the time for ${
+                        "Pass has won `${"%.2f".format((smashes.toDouble() / total.toDouble()) * 100)}`% of the time for ${
                             bot.pokemonMap[pokemonId]!!.replaceFirstChar(
                                 Char::titlecase
                             )
@@ -695,7 +695,7 @@ class PokeCommands(
                     )
                 else
                     event.hook.sendMessage(
-                        "`${"%.2f".format((smashes / total) * 100)}`% of the total votes for ${
+                        "`${"%.2f".format((smashes.toDouble() / total.toDouble()) * 100)}`% of the total votes for ${
                             bot.pokemonMap[pokemonId]!!.replaceFirstChar(Char::titlecase)
                         } have been for pass"
                     )
