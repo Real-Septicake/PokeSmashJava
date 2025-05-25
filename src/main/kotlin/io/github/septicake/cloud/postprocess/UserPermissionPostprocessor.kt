@@ -29,7 +29,7 @@ class UserPermissionPostprocessor<C>(
             logger.debug { "whitelist only \"${interaction.fullCommandName}\"" }
             val guild = context.get<Guild>("Guild")
             if(!bot.userWhitelisted(guild, interaction.user.idLong)) {
-                interaction.reply("\\*racks shotgun* Do not the bot.").queue()
+                interaction.reply("\\*racks shotgun* Do not the bot.").complete()
                 logFailedUse(commandMeta, context, interaction)
                 ConsumerService.interrupt()
             }
@@ -37,14 +37,14 @@ class UserPermissionPostprocessor<C>(
             logger.debug { "guild owner only \"${interaction.fullCommandName}\"" }
             val guild = context.get<Guild>("Guild")
             if(interaction.user.idLong != guild.ownerIdLong && interaction.user.idLong != PokeSmashConstants.ownerId) {
-                interaction.reply("Command can only be used by server owner.").setEphemeral(true).queue()
+                interaction.reply("Command can only be used by server owner.").setEphemeral(true).complete()
                 logFailedUse(commandMeta, context, interaction)
                 ConsumerService.interrupt()
             }
         } else if(commandMeta.getOrDefault(PokeMeta.BOT_OWNER_ONLY, false)) {
             logger.debug { "bot owner only \"${interaction.fullCommandName}\"" }
             if(PokeSmashConstants.ownerId != interaction.user.idLong) {
-                interaction.reply("Only the bot owner can use this command.").setEphemeral(true).queue()
+                interaction.reply("Only the bot owner can use this command.").setEphemeral(true).complete()
                 logFailedUse(commandMeta, context, interaction)
                 ConsumerService.interrupt()
             }
@@ -63,7 +63,7 @@ class UserPermissionPostprocessor<C>(
             val guildId = interaction.guild?.id
             val guildName = interaction.guild?.name ?: "DMs"
 
-            "User \"$userId\" ($username) $guildName ${if(guildId != null) "in ($guildId) " else ""}attempted to use command \"${interaction.fullCommandName}\" ${if(commandParameters.isNotEmpty()) "with params:" else ""}$commandParameters"
+            "User \"$userId\" ($username) in $guildName ${if(guildId != null) "($guildId) " else ""}attempted to use command \"${interaction.fullCommandName}\" ${if(commandParameters.isNotEmpty()) "with params:" else ""}$commandParameters"
         }
     }
 }
