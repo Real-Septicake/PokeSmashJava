@@ -30,7 +30,7 @@ import io.github.septicake.db.PollResult
 import io.github.septicake.db.PollTable
 import io.github.septicake.db.WhitelistTable
 import io.github.septicake.jobs.PollCheck
-import io.github.septicake.listeners.MessageUpdateListener
+import io.github.septicake.listeners.MessageListener
 import io.github.septicake.util.ScheduledThreadPool
 import io.github.septicake.util.currentThread
 import io.github.septicake.util.getEnv
@@ -123,7 +123,7 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
 
     val jda = builder.apply {
         addEventListeners(commandManager.createListener())
-        addEventListeners(MessageUpdateListener(this@PokeSmashBot))
+        addEventListeners(MessageListener(this@PokeSmashBot))
     }.build()
 
     lateinit var db: Database

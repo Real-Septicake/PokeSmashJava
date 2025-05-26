@@ -8,7 +8,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.getLogger
 
-class MessageUpdateListener(
+class MessageListener(
     val bot: PokeSmashBot
 ): ListenerAdapter() {
 
