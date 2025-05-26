@@ -7,7 +7,6 @@ import dev.minn.jda.ktx.messages.MessageCreate
 import io.github.septicake.PokeSmashBot
 import io.github.septicake.cloud.annotations.CommandParams
 import io.github.septicake.cloud.annotations.GuildOnly
-import io.github.septicake.cloud.annotations.Pokemon
 import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.WhitelistEntity
@@ -146,8 +145,7 @@ class ModCommands(
     suspend fun addPollCommand(
         interaction: JDAInteraction,
         @Argument("pokemon")
-        @Pokemon
-        pokemon: String,
+        pokemon: PokemonInfo,
         @Argument("smashes")
         smashes: Long,
         @Argument("passes")
@@ -155,9 +153,8 @@ class ModCommands(
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().setEphemeral(true).await()
-        val pokemonId = pokemon.toIntOrNull() ?: bot.pokemonMap.inverse()[pokemon.lowercase()]!!
         try {
-            bot.setPollResults(event.guild!!.idLong, pokemonId, smashes, passes)
+            bot.setPollResults(event.guild!!.idLong, pokemon.id, smashes, passes)
             event.hook.sendMessage("Poll result set.").await()
         } catch (e: PokeSmashBot.ServerNotPopulatedException) {
             event.hook.sendMessage("Server has not been populated yet.").await()
@@ -170,7 +167,6 @@ class ModCommands(
     suspend fun removePollCommand(
         interaction: JDAInteraction,
         @Argument("pokemon")
-        @Pokemon
         pokemon: PokemonInfo,
     ) {
         val event = interaction.interactionEvent() ?: return

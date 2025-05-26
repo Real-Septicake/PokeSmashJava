@@ -171,12 +171,11 @@ class PokeCommands(
         @RequireOptions("count", "percent")
         format: String,
         @Argument("pokemon")
-        @Pokemon
-        pokemon: String
+        pokemon: PokemonInfo
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
-        val pokemonId = pokemon.toIntOrNull() ?: bot.pokemonMap.inverse()[pokemon.lowercase()]!!
+        val pokemonId = pokemon.id
         if (info == "polls") {
             val smashes = transaction(bot.db) {
                 PollTable.selectAll().where {
@@ -319,12 +318,11 @@ class PokeCommands(
         @RequireOptions("count", "percent")
         format: String,
         @Argument("pokemon")
-        @Pokemon
-        pokemon: String
+        pokemon: PokemonInfo
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
-        val pokemonId = pokemon.toIntOrNull() ?: bot.pokemonMap.inverse()[pokemon.lowercase()]!!
+        val pokemonId = pokemon.id
         if (info == "polls") {
             val smashes = transaction(bot.db) {
                 PollTable.selectAll().where {
@@ -522,12 +520,11 @@ class PokeCommands(
         @RequireOptions("count", "percent")
         format: String,
         @Argument("pokemon")
-        @Pokemon
-        pokemon: String
+        pokemon: PokemonInfo
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
-        val pokemonId = pokemon.toIntOrNull() ?: bot.pokemonMap.inverse()[pokemon.lowercase()]!!
+        val pokemonId = pokemon.id
         if (info == "polls") {
             val smashes = transaction(bot.db) {
                 PollTable.selectAll().where {
@@ -618,12 +615,11 @@ class PokeCommands(
         @RequireOptions("count", "percent")
         format: String,
         @Argument("pokemon")
-        @Pokemon
-        pokemon: String
+        pokemon: PokemonInfo
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
-        val pokemonId = pokemon.toIntOrNull() ?: bot.pokemonMap.inverse()[pokemon.lowercase()]!!
+        val pokemonId = pokemon.id
         if (info == "polls") {
             val smashes = transaction(bot.db) {
                 PollTable.selectAll().where {

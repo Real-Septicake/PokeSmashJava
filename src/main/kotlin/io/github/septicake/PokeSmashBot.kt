@@ -10,7 +10,6 @@ import io.github.septicake.cloud.annotations.ChannelRestriction
 import io.github.septicake.cloud.annotations.CommandParams
 import io.github.septicake.cloud.annotations.CommandsEnabled
 import io.github.septicake.cloud.annotations.GuildOnly
-import io.github.septicake.cloud.annotations.Pokemon
 import io.github.septicake.cloud.annotations.RequireOptions
 import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.cloud.parser.PokemonInfoParser
@@ -20,7 +19,6 @@ import io.github.septicake.cloud.postprocess.CommandsEnabledPostprocessor
 import io.github.septicake.cloud.postprocess.GuildOnlyPostprocessor
 import io.github.septicake.cloud.postprocess.UserPermissionPostprocessor
 import io.github.septicake.cloud.preprocess.PokeCommandPreprocessor
-import io.github.septicake.cloud.preprocess.PokemonComponentPreprocessor
 import io.github.septicake.cloud.preprocess.RequireOptionComponentPreprocessor
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.GuildTable
@@ -120,9 +118,6 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
 
         registerPreprocessorMapper(RequireOptions::class.java) { annotation ->
             RequireOptionComponentPreprocessor(annotation.options)
-        }
-        registerPreprocessorMapper(Pokemon::class.java) { _ ->
-            PokemonComponentPreprocessor(this@PokeSmashBot)
         }
     }
 
