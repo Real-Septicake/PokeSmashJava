@@ -10,7 +10,6 @@ import io.github.septicake.cloud.annotations.ChannelRestriction
 import io.github.septicake.cloud.annotations.CommandParams
 import io.github.septicake.cloud.annotations.CommandsEnabled
 import io.github.septicake.cloud.annotations.GuildOnly
-import io.github.septicake.cloud.annotations.RequireOptions
 import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.cloud.parser.PokemonInfoParser
 import io.github.septicake.cloud.parser.SpeciesInfoParser
@@ -115,10 +114,6 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
         registerBuilderModifier(GuildOnly::class.java, PokeMeta::guildOnlyModifier)
         registerBuilderModifier(CommandsEnabled::class.java, PokeMeta::commandsEnabledModifier)
         registerBuilderModifier(CommandParams::class.java, PokeMeta::commandParamsModifier)
-
-        registerPreprocessorMapper(RequireOptions::class.java) { annotation ->
-            RequireOptionComponentPreprocessor(annotation.options)
-        }
     }
 
     val jda = builder.apply {
