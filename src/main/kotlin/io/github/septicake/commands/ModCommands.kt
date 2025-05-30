@@ -207,7 +207,7 @@ class ModCommands(
                 field("Server ID", guild.id)
                 field() // also alignment
 
-                footer { name = "ID: ${interaction.user().id}" }
+                footer { name = "ID: ${interaction.user().id}"; iconUrl = event.user.avatarUrl }
             }
         }).await()
         event.hook.sendMessage("Message sent").await()

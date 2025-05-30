@@ -21,6 +21,7 @@ object PokeMeta {
 
     val BLACKLIST_SENSITIVE: CloudKey<Boolean> = cloudKey("blacklist-sensitive")
 
+    @Suppress("UNUSED_PARAMETER")
     fun <T> blacklistSensitiveModifier(blacklistSensitive: BlacklistSensitive, builder: Builder<T>): Builder<T> {
         return builder.meta(BLACKLIST_SENSITIVE, true)
     }

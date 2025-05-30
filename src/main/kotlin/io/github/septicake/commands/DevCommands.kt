@@ -129,12 +129,32 @@ class DevCommands(
         ).queue()
     }
 
+    @Command("warn <user> <reason>")
+    @ChannelRestriction(devChannel = true)
+    @UserPermissions(botOwnerOnly = true)
+    @CommandParams("user", "reason")
+    fun warnCommand(
+        interaction: JDAInteraction,
+        @Argument("user")
+        user: Long,
+        @Argument("reason")
+        reason: String
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+
+        bot.jda.openPrivateChannelById(user).queue({
+            it.sendMessage("# Warning Issued\nReason: $reason").queue()
+            event.hook.sendMessage("Warning issued to user \"$user\"").queue()
+        }, { event.hook.sendMessage("User does not exist").queue() })
+    }
+
     @Command("blacklist add <user> <reason>")
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("user", "reason")
     @CommandDescription("Only usable by bot developer")
-     fun blacklistAddCommand(
+    fun blacklistAddCommand(
         interaction: JDAInteraction,
         @Argument("user")
         user: Long,
@@ -146,7 +166,7 @@ class DevCommands(
         event.deferReply().queue()
         bot.jda.openPrivateChannelById(user).queue({ channel ->
             val userEntity = bot.userBlacklisted(user)
-            if(userEntity != null) {
+            if (userEntity != null) {
                 event.hook.sendMessage("User \"$user\" already blacklisted for `${userEntity.reason}`").queue()
                 return@queue
             }
@@ -178,7 +198,7 @@ class DevCommands(
 
         bot.jda.openPrivateChannelById(user).queue({ channel ->
             val userEntity = bot.userBlacklisted(user)
-            if(userEntity == null) {
+            if (userEntity == null) {
                 event.hook.sendMessage("User \"$user\" is not blacklisted").queue()
                 return@queue
             }
@@ -190,7 +210,7 @@ class DevCommands(
         }, { event.hook.sendMessage("User does not exist").queue() })
     }
 
-    @Command("shutdown <test>")
+    @Command("shutdown [test]")
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("test")

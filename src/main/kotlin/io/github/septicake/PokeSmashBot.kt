@@ -66,8 +66,8 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
     override val coroutineContext = SupervisorJob() + coroutineDispatcher
 
     val homeServer = getEnv("HOME_SERVER")?.toLong()
-    val testingChannel = getEnv("TESTING_CHANNEL")?.toLong()
-    val replyChannel = getEnv("REPLY_CHANNEL")?.toLong()
+    val testingChannel = getEnv("TESTING_CHANNEL")!!.toLong()
+    val replyChannel = getEnv("REPLY_CHANNEL")!!.toLong()
 
     var commandsEnabled = true
 
@@ -92,7 +92,6 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
 
     val annotationParser = AnnotationParser(commandManager, JDAInteraction::class.java).apply {
         installCoroutineSupport()
-        ReplySettingBuilderModifier.install(this)
         CommandScopeBuilderModifier.install(this)
 
         registerBuilderModifier(BlacklistSensitive::class.java, PokeMeta::blacklistSensitiveModifier)
@@ -265,7 +264,6 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
     }
 
     suspend fun setPollResults(guildId: Long, pokemonId: Int, smashVotes: Long, passVotes: Long) {
-        logger.debug { "Set $pokemonId poll in $guildId to smashes: $smashVotes and passes: $passVotes" }
         val poll = pollEntity(guildId, pokemonId)
         newSuspendedTransaction(db = db) {
             val guildInfo = GuildEntity.findById(guildId) ?: throw ServerNotPopulatedException()
