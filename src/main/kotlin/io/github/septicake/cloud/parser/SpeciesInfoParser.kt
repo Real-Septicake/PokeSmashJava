@@ -12,11 +12,14 @@ import org.incendo.cloud.context.CommandInput
 import org.incendo.cloud.discord.jda5.JDA5CommandManager
 import org.incendo.cloud.parser.ArgumentParseResult
 import org.incendo.cloud.parser.ArgumentParser
+import org.slf4j.kotlin.debug
+import org.slf4j.kotlin.getLogger
 import kotlin.time.Duration.Companion.days
 
 class SpeciesInfoParser<C : Any>(
     private val bot: PokeSmashBot,
 ) : ArgumentParser<C, PokemonSpeciesInfo> {
+    val logger by getLogger()
     private val nameToId: Map<String, Int>
     private val pokemonCache = Cache.Builder<Int, PokemonSpeciesInfo>().expireAfterWrite(7.days).build()
 
@@ -51,6 +54,7 @@ class SpeciesInfoParser<C : Any>(
 
     private fun speciesById(pokemonId: Int) = runBlocking {
         pokemonCache.get(pokemonId) {
+            logger.debug { "Species $pokemonId missed in cache" }
             PokeApi.species(pokemonId)
         }
     }

@@ -12,12 +12,14 @@ import org.incendo.cloud.context.CommandInput
 import org.incendo.cloud.discord.jda5.JDA5CommandManager
 import org.incendo.cloud.parser.ArgumentParseResult
 import org.incendo.cloud.parser.ArgumentParser
-import org.incendo.cloud.suggestion.SuggestionProvider
+import org.slf4j.kotlin.debug
+import org.slf4j.kotlin.getLogger
 import kotlin.time.Duration.Companion.days
 
 class PokemonInfoParser<C : Any>(
     private val bot: PokeSmashBot,
 ) : ArgumentParser<C, PokemonInfo> {
+    val logger by getLogger()
     private val nameToId: Map<String, Int>
     private val pokemonCache = Cache.Builder<Int, PokemonInfo>().expireAfterWrite(7.days).build()
 
@@ -50,25 +52,9 @@ class PokemonInfoParser<C : Any>(
         )
     }
 
-    override fun suggestionProvider(): SuggestionProvider<C> {
-        return SuggestionProvider.blockingStrings { context, _ ->
-            val guild = context[JDA5CommandManager.CONTEXT_JDA_INTERACTION].guild()
-
-            val currentId = if (guild != null) bot.guildEntity(guild).offset else null
-            return@blockingStrings buildList {
-                if (currentId != null) {
-                    add(currentId.toString())
-
-                    add(pokemonById(currentId).name)
-                }
-
-                add("pikachu")
-            }
-        }
-    }
-
     private fun pokemonById(pokemonId: Int) = runBlocking {
         pokemonCache.get(pokemonId) {
+            logger.debug { "Pokemon $pokemonId missed in cache" }
             PokeApi.pokemon(pokemonId)
         }
     }
