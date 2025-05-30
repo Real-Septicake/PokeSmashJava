@@ -6,28 +6,13 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.github.classgraph.ClassGraph
 import io.github.septicake.cloud.PokeMeta
-import io.github.septicake.cloud.annotations.ChannelRestriction
-import io.github.septicake.cloud.annotations.CommandParams
-import io.github.septicake.cloud.annotations.CommandsEnabled
-import io.github.septicake.cloud.annotations.GuildOnly
-import io.github.septicake.cloud.annotations.UserPermissions
+import io.github.septicake.cloud.annotations.*
 import io.github.septicake.cloud.parser.PokemonInfoParser
 import io.github.septicake.cloud.parser.SpeciesInfoParser
-import io.github.septicake.cloud.postprocess.ChannelRestrictionPostprocessor
-import io.github.septicake.cloud.postprocess.CommandsEnabledPostprocessor
-import io.github.septicake.cloud.postprocess.GuildOnlyPostprocessor
-import io.github.septicake.cloud.postprocess.UserPermissionPostprocessor
+import io.github.septicake.cloud.postprocess.*
+import io.github.septicake.cloud.preprocess.LengthMaxComponentPreprocessor
 import io.github.septicake.cloud.preprocess.PokeCommandPreprocessor
-import io.github.septicake.cloud.preprocess.RequireOptionComponentPreprocessor
-import io.github.septicake.db.GuildEntity
-import io.github.septicake.db.GuildTable
-import io.github.septicake.db.PokemonEntity
-import io.github.septicake.db.PokemonTable
-import io.github.septicake.db.PollEndTable
-import io.github.septicake.db.PollEntity
-import io.github.septicake.db.PollResult
-import io.github.septicake.db.PollTable
-import io.github.septicake.db.WhitelistTable
+import io.github.septicake.db.*
 import io.github.septicake.jobs.PollCheck
 import io.github.septicake.listeners.MessageListener
 import io.github.septicake.util.ScheduledThreadPool
@@ -95,6 +80,7 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
     ).apply {
         registerCommandPreProcessor(PokeCommandPreprocessor())
 
+        registerCommandPostProcessor(BlacklistSensitivePostprocessor<JDAInteraction>(this@PokeSmashBot))
         registerCommandPostProcessor(ChannelRestrictionPostprocessor<JDAInteraction>(this@PokeSmashBot))
         registerCommandPostProcessor(UserPermissionPostprocessor<JDAInteraction>(this@PokeSmashBot))
         registerCommandPostProcessor(GuildOnlyPostprocessor<JDAInteraction>())
@@ -109,11 +95,16 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
         ReplySettingBuilderModifier.install(this)
         CommandScopeBuilderModifier.install(this)
 
+        registerBuilderModifier(BlacklistSensitive::class.java, PokeMeta::blacklistSensitiveModifier)
         registerBuilderModifier(ChannelRestriction::class.java, PokeMeta::channelRestrictionModifier)
         registerBuilderModifier(UserPermissions::class.java, PokeMeta::userPermissionModifier)
         registerBuilderModifier(GuildOnly::class.java, PokeMeta::guildOnlyModifier)
         registerBuilderModifier(CommandsEnabled::class.java, PokeMeta::commandsEnabledModifier)
         registerBuilderModifier(CommandParams::class.java, PokeMeta::commandParamsModifier)
+
+        registerPreprocessorMapper(LengthMax::class.java) { annotation ->
+            LengthMaxComponentPreprocessor<JDAInteraction>(annotation.length)
+        }
     }
 
     val jda = builder.apply {
@@ -174,7 +165,14 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
         db = Database.connect(datasource = hikari, databaseConfig = dbConfig)
 
         transaction(db) {
-            SchemaUtils.create(GuildTable, PokemonTable, PollTable, WhitelistTable, PollEndTable)
+            SchemaUtils.create(
+                GuildTable,
+                PokemonTable,
+                PollTable,
+                WhitelistTable,
+                BlacklistTable,
+                PollEndTable
+            )
         }
 
         jda.updateCommands()
@@ -260,6 +258,10 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
             return true
 
         return userServerWhitelisted(guild.idLong, user)
+    }
+
+     fun userBlacklisted(user: Long) = transaction(db = db) {
+        BlacklistEntity.findById(user)
     }
 
     suspend fun setPollResults(guildId: Long, pokemonId: Int, smashVotes: Long, passVotes: Long) {

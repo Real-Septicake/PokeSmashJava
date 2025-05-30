@@ -11,24 +11,20 @@ import org.slf4j.kotlin.getLogger
 class MessageListener(
     val bot: PokeSmashBot
 ): ListenerAdapter() {
-
     private val logger by getLogger()
 
     override fun onMessageReceived(event: MessageReceivedEvent) {
-        if(bot.jda.selfUser.idLong != event.author.idLong) return
-        try {
-            event.guild
-        } catch (e: IllegalStateException) {
-            return
-        }
+        if (event.isFromGuild) {
+            if(bot.jda.selfUser.idLong != event.author.idLong) return
 
-        val poll = event.message.poll ?: return
-        val ends = poll.timeExpiresAt?.toInstant() ?: return
+            val poll = event.message.poll ?: return
+            val ends = poll.timeExpiresAt?.toInstant() ?: return
 
-        transaction(bot.db) {
-            PollEndEntity.new(event.messageIdLong) {
-                this.server = event.guild.idLong
-                this.finish = ends.toKotlinInstant()
+            transaction(bot.db) {
+                PollEndEntity.new(event.messageIdLong) {
+                    this.server = event.guild.idLong
+                    this.finish = ends.toKotlinInstant()
+                }
             }
         }
     }

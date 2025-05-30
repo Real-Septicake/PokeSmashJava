@@ -5,6 +5,7 @@ package io.github.septicake.commands
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.messages.MessageCreate
 import io.github.septicake.PokeSmashBot
+import io.github.septicake.cloud.annotations.BlacklistSensitive
 import io.github.septicake.cloud.annotations.CommandParams
 import io.github.septicake.cloud.annotations.GuildOnly
 import io.github.septicake.cloud.annotations.UserPermissions
@@ -182,6 +183,7 @@ class ModCommands(
     }
 
     @GuildOnly
+    @BlacklistSensitive
     @UserPermissions(whitelistOnly = true)
     @Command("message <text>")
     suspend fun messageCommand(

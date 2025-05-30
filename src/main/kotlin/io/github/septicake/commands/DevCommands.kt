@@ -5,9 +5,12 @@ package io.github.septicake.commands
 import io.github.septicake.PokeSmashBot
 import io.github.septicake.cloud.annotations.ChannelRestriction
 import io.github.septicake.cloud.annotations.CommandParams
+import io.github.septicake.cloud.annotations.LengthMax
 import io.github.septicake.cloud.annotations.UserPermissions
+import io.github.septicake.db.BlacklistEntity
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.GuildTable
+import kotlinx.datetime.Clock
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException
 import org.incendo.cloud.annotation.specifier.Greedy
 import org.incendo.cloud.annotations.Argument
@@ -124,6 +127,67 @@ class DevCommands(
                     "$noChannel server${if (noChannel != 1) "s" else ""} did not have a channel.\n" +
                     "$lackPerms server${if (noChannel != 1) "s" else ""} did not give bot necessary permissions"
         ).queue()
+    }
+
+    @Command("blacklist add <user> <reason>")
+    @ChannelRestriction(devChannel = true)
+    @UserPermissions(botOwnerOnly = true)
+    @CommandParams("user", "reason")
+    @CommandDescription("Only usable by bot developer")
+     fun blacklistAddCommand(
+        interaction: JDAInteraction,
+        @Argument("user")
+        user: Long,
+        @Argument("reason")
+        @LengthMax(255)
+        reason: String
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+        bot.jda.openPrivateChannelById(user).queue({ channel ->
+            val userEntity = bot.userBlacklisted(user)
+            if(userEntity != null) {
+                event.hook.sendMessage("User \"$user\" already blacklisted for `${userEntity.reason}`").queue()
+                return@queue
+            }
+
+            transaction(bot.db) {
+                BlacklistEntity.new(user) {
+                    this.reason = reason
+                    this.since = Clock.System.now()
+                }
+            }
+            event.hook.sendMessage("User \"$user\" has been blacklisted for `$reason`").queue()
+
+            channel.sendMessage("You have been blacklisted for `$reason`").queue()
+        }, { event.hook.sendMessage("User does not exist").queue() })
+    }
+
+    @Command("blacklist remove <user>")
+    @ChannelRestriction(devChannel = true)
+    @UserPermissions(botOwnerOnly = true)
+    @CommandParams("user")
+    @CommandDescription("Only usable by bot developer")
+    fun blacklistRemoveCommand(
+        interaction: JDAInteraction,
+        @Argument("user")
+        user: Long
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+
+        bot.jda.openPrivateChannelById(user).queue({ channel ->
+            val userEntity = bot.userBlacklisted(user)
+            if(userEntity == null) {
+                event.hook.sendMessage("User \"$user\" is not blacklisted").queue()
+                return@queue
+            }
+
+            transaction(bot.db) { userEntity.delete() }
+            event.hook.sendMessage("User \"$user\" has been removed from blacklist").queue()
+
+            channel.sendMessage("You have been removed from the blacklist").queue()
+        }, { event.hook.sendMessage("User does not exist").queue() })
     }
 
     @Command("shutdown <test>")

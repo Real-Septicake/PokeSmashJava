@@ -1,10 +1,6 @@
 package io.github.septicake.cloud
 
-import io.github.septicake.cloud.annotations.ChannelRestriction
-import io.github.septicake.cloud.annotations.CommandParams
-import io.github.septicake.cloud.annotations.CommandsEnabled
-import io.github.septicake.cloud.annotations.GuildOnly
-import io.github.septicake.cloud.annotations.UserPermissions
+import io.github.septicake.cloud.annotations.*
 import org.incendo.cloud.Command.Builder
 import org.incendo.cloud.key.CloudKey
 import org.incendo.cloud.kotlin.extension.cloudKey
@@ -22,6 +18,12 @@ object PokeMeta {
     val COMMANDS_ENABLED: CloudKey<Boolean> = cloudKey("commands-enabled")
 
     val COMMAND_PARAMS: CloudKey<Array<out String>> = cloudKey("command-params")
+
+    val BLACKLIST_SENSITIVE: CloudKey<Boolean> = cloudKey("blacklist-sensitive")
+
+    fun <T> blacklistSensitiveModifier(blacklistSensitive: BlacklistSensitive, builder: Builder<T>): Builder<T> {
+        return builder.meta(BLACKLIST_SENSITIVE, true)
+    }
 
     fun <T> userPermissionModifier(userPermissions: UserPermissions, builder: Builder<T>) : Builder<T> {
         return builder.meta(WHITELIST_ONLY, userPermissions.whitelistOnly)

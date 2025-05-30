@@ -337,7 +337,7 @@ class PokeCommands(
         val generation = species.generation.fetchInfo()
         val default = species.varieties.find { it.isDefault }!!
         val groups = species.eggGroups.foldIndexed("") { i, acc, eggGroup ->
-            return@foldIndexed acc + (if (i != 0) ", " else "") + eggGroup.fetchInfo().names.find { it.language.name == "en" }!!.name
+            acc + (if (i != 0) ", " else "") + eggGroup.fetchInfo().names.find { it.language.name == "en" }!!.name
         }
 
         logger.info { "Species ${species.name} (${species.id}) info checked in server ${interaction.guild()?.name ?: "DMs"}" }
