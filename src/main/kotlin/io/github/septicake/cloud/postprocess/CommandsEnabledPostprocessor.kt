@@ -19,7 +19,7 @@ class CommandsEnabledPostprocessor<C>(
         if (commandMeta.getOrDefault(PokeMeta.COMMANDS_ENABLED, false)) {
             if(!bot.commandsEnabled) {
                 if (interaction.user.idLong != PokeSmashConstants.ownerId) {
-                    interaction.reply("Commands are not currently enabled.").setEphemeral(true).queue()
+                    interaction.reply("Commands are not currently enabled.").setEphemeral(true).complete()
                     ConsumerService.interrupt()
                 }
             }
