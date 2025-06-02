@@ -28,7 +28,6 @@ class PollCheck : Job {
         val total = AtomicInt(0)
 
         val now = Clock.System.now()
-        val delete = mutableListOf<PollEndEntity>()
         val bot = context.scheduler.context["Bot"] as PokeSmashBot
 
         runBlocking(Dispatchers.IO) {
@@ -41,21 +40,21 @@ class PollCheck : Job {
                             val guild = bot.jda.getGuildById(entity.server)
 
                             if (guild == null) {
-                                delete += entity
+                                transaction(bot.db) { entity.delete() }
                                 return@async
                             }
 
                             val channel = guild.getTextChannelById(bot.guildEntity(guild).channel!!)
 
                             if (channel == null) {
-                                delete += entity
+                                transaction(bot.db) { entity.delete() }
                                 return@async
                             }
 
                             val poll = channel.retrieveMessageById(entity.id.value).await().poll
 
                             if (poll == null) {
-                                delete += entity
+                                transaction(bot.db) { entity.delete() }
                                 return@async
                             }
 
@@ -66,7 +65,7 @@ class PollCheck : Job {
                                 poll.answers[1].votes.toLong()
                             )
 
-                            delete += entity
+                            transaction(bot.db) { entity.delete() }
 
                             finished.incrementAndFetch()
                         } else {
@@ -74,12 +73,6 @@ class PollCheck : Job {
                         }
                     }
                 }.joinAll()
-            }
-        }
-
-        transaction(bot.db) {
-            for (entity in delete) {
-                entity.delete()
             }
         }
 

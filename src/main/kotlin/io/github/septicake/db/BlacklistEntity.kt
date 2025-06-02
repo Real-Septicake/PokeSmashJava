@@ -4,11 +4,12 @@ import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.sql.kotlin.datetime.CurrentTimestamp
 import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
 
 object BlacklistTable : LongIdTable("blacklist", columnName = "user") {
-    val reason = varchar("reason", 255)
-    val since = timestamp("since").index("sinceIndexed")
+    val reason = varchar("reason", 255).default("[None Given]")
+    val since = timestamp("since").index().defaultExpression(CurrentTimestamp)
 }
 
 class BlacklistEntity(id: EntityID<Long>) : LongEntity(id) {

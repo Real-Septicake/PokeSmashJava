@@ -379,6 +379,9 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
         PollEntity.find { (PollTable.guild eq guildId) and (PollTable.pokemon eq pokemonId) }.singleOrNull()
     }
 
+    fun openDM(user: Long, accept: (PrivateChannel) -> Unit, error: (Throwable) -> Unit) =
+        jda.openPrivateChannelById(user).queue(accept, error)
+
     object PokeSmashThreadFactory : ThreadFactory {
         private val threadGroup: ThreadGroup = currentThread.threadGroup
         private var threadCount: Int = 0

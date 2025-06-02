@@ -10,6 +10,7 @@ import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.db.BlacklistEntity
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.GuildTable
+import io.github.septicake.db.WhitelistTable
 import kotlinx.datetime.Clock
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException
 import org.incendo.cloud.annotation.specifier.Greedy
@@ -17,6 +18,8 @@ import org.incendo.cloud.annotations.Argument
 import org.incendo.cloud.annotations.Command
 import org.incendo.cloud.annotations.CommandDescription
 import org.incendo.cloud.discord.jda5.JDAInteraction
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.error
 import org.slf4j.kotlin.getLogger
@@ -38,6 +41,26 @@ class DevCommands(
         val event = interaction.interactionEvent() ?: return
         bot.commandsEnabled = value
         event.reply("Commands ${if (value) "enabled" else "disabled"}.").queue()
+    }
+
+    @Command("whitelist strip <user>")
+    @ChannelRestriction(devChannel = true)
+    @UserPermissions(botOwnerOnly = true)
+    fun whitelistStripCommand(
+        interaction: JDAInteraction,
+        @Argument("user")
+        user: Long
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+
+        transaction(bot.db) {
+            WhitelistTable.deleteWhere {
+                this.user eq user
+            }
+        }
+
+        event.hook.sendMessage("User $user has been purged from whitelist").queue()
     }
 
     @Command("msg <server> <msg>")
@@ -78,7 +101,7 @@ class DevCommands(
                     }
                 }
             } else {
-                event.reply("Server has not set a channel yet.")
+                event.reply("Server has not set a channel yet.").queue()
             }
         }
     }
@@ -143,7 +166,7 @@ class DevCommands(
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
 
-        bot.jda.openPrivateChannelById(user).queue({
+        bot.openDM(user, {
             it.sendMessage("# Warning Issued\nReason: $reason").queue()
             event.hook.sendMessage("Warning issued to user \"$user\"").queue()
         }, { event.hook.sendMessage("User does not exist").queue() })
@@ -164,11 +187,11 @@ class DevCommands(
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
-        bot.jda.openPrivateChannelById(user).queue({ channel ->
+        bot.openDM(user, { channel ->
             val userEntity = bot.userBlacklisted(user)
             if (userEntity != null) {
                 event.hook.sendMessage("User \"$user\" already blacklisted for `${userEntity.reason}`").queue()
-                return@queue
+                return@openDM
             }
 
             transaction(bot.db) {
@@ -196,11 +219,11 @@ class DevCommands(
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
 
-        bot.jda.openPrivateChannelById(user).queue({ channel ->
+        bot.openDM(user, { channel ->
             val userEntity = bot.userBlacklisted(user)
             if (userEntity == null) {
                 event.hook.sendMessage("User \"$user\" is not blacklisted").queue()
-                return@queue
+                return@openDM
             }
 
             transaction(bot.db) { userEntity.delete() }
@@ -225,7 +248,7 @@ class DevCommands(
         if (!test) {
             transaction(bot.db) {
                 GuildTable.select(GuildTable.channel, GuildTable.id, GuildTable.name).forEach {
-                    if (it[GuildTable.channel] == bot.testingChannel!!.toLong())
+                    if (it[GuildTable.channel] == bot.testingChannel)
                         return@forEach
 
                     if (it[GuildTable.channel] == null) {

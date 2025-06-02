@@ -195,7 +195,7 @@ class ModCommands(
         val event = interaction.interactionEvent() ?: return
         val guild = event.guild!!
         event.deferReply().setEphemeral(true).await()
-        bot.jda.getTextChannelById(bot.replyChannel!!)!!.sendMessage(MessageCreate {
+        bot.jda.getTextChannelById(bot.replyChannel)!!.sendMessage(MessageCreate {
             embed {
                 title = "Message from ${interaction.user().effectiveName}"
                 description = text
