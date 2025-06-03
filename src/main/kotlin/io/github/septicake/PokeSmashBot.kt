@@ -4,6 +4,7 @@ import com.google.common.collect.BiMap
 import com.google.common.collect.HashBiMap
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import dev.minn.jda.ktx.coroutines.await
 import io.github.classgraph.ClassGraph
 import io.github.septicake.cloud.PokeMeta
 import io.github.septicake.cloud.annotations.*
@@ -26,17 +27,11 @@ import org.incendo.cloud.annotations.AnnotationParser
 import org.incendo.cloud.discord.jda5.JDA5CommandManager
 import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.incendo.cloud.discord.jda5.JDAInteraction.InteractionMapper
-import org.incendo.cloud.discord.jda5.annotation.ReplySettingBuilderModifier
 import org.incendo.cloud.discord.slash.CommandScope
 import org.incendo.cloud.discord.slash.annotation.CommandScopeBuilderModifier
 import org.incendo.cloud.execution.ExecutionCoordinator
 import org.incendo.cloud.kotlin.coroutines.annotations.installCoroutineSupport
 import org.incendo.cloud.kotlin.extension.parserDescriptor
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.DatabaseConfig
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.quartz.CronScheduleBuilder
@@ -44,7 +39,6 @@ import org.quartz.JobBuilder
 import org.quartz.Scheduler
 import org.quartz.TriggerBuilder
 import org.quartz.impl.StdSchedulerFactory
-import org.slf4j.kotlin.debug
 import org.slf4j.kotlin.getLogger
 import org.slf4j.kotlin.info
 import java.util.concurrent.ThreadFactory
@@ -54,6 +48,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.datetime.Clock
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
 
 class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
@@ -66,6 +65,7 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
     override val coroutineContext = SupervisorJob() + coroutineDispatcher
 
     val homeServer = getEnv("HOME_SERVER")?.toLong()
+    val ticketChannel = getEnv("TICKET_CHANNEL")!!.toLong()
     val testingChannel = getEnv("TESTING_CHANNEL")!!.toLong()
     val replyChannel = getEnv("REPLY_CHANNEL")!!.toLong()
 
@@ -84,6 +84,7 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
         registerCommandPostProcessor(ChannelRestrictionPostprocessor<JDAInteraction>(this@PokeSmashBot))
         registerCommandPostProcessor(UserPermissionPostprocessor<JDAInteraction>(this@PokeSmashBot))
         registerCommandPostProcessor(GuildOnlyPostprocessor<JDAInteraction>())
+        registerCommandPostProcessor(PrivateOnlyPostprocessor<JDAInteraction>())
         registerCommandPostProcessor(CommandsEnabledPostprocessor<JDAInteraction>(this@PokeSmashBot))
 
         parserRegistry().registerParser(parserDescriptor(PokemonInfoParser(this@PokeSmashBot)))
@@ -98,6 +99,7 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
         registerBuilderModifier(ChannelRestriction::class.java, PokeMeta::channelRestrictionModifier)
         registerBuilderModifier(UserPermissions::class.java, PokeMeta::userPermissionModifier)
         registerBuilderModifier(GuildOnly::class.java, PokeMeta::guildOnlyModifier)
+        registerBuilderModifier(PrivateOnly::class.java, PokeMeta::privateOnlyModifier)
         registerBuilderModifier(CommandsEnabled::class.java, PokeMeta::commandsEnabledModifier)
         registerBuilderModifier(CommandParams::class.java, PokeMeta::commandParamsModifier)
 
@@ -165,12 +167,19 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
 
         transaction(db) {
             SchemaUtils.create(
+                // General Tables
                 GuildTable,
                 PokemonTable,
+                // Poll Tables
+                PollEndTable,
                 PollTable,
+                // User Permission Tables
                 WhitelistTable,
                 BlacklistTable,
-                PollEndTable
+                // Ticket Tables
+                TicketTable,
+                UserTicketTable,
+                TicketIncludeTable
             )
         }
 
@@ -378,6 +387,82 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
     fun pollEntity(guildId: Long, pokemonId: Int) = transaction(db) {
         PollEntity.find { (PollTable.guild eq guildId) and (PollTable.pokemon eq pokemonId) }.singleOrNull()
     }
+
+    fun userTicketEntity(user: Long) = transaction(db) {
+        UserTicketEntity.findById(user) ?: UserTicketEntity.new(user) {
+            openTickets = 0
+            maxOpenTickets = 5
+            totalTickets = 0
+        }
+    }
+
+    suspend fun openTicket(author: Long, topic: String) : Pair<TicketEntity, ThreadChannel> {
+        val channel = jda.getTextChannelById(this.ticketChannel)!!
+
+        val message = channel.sendMessage("[Not Populated]").await()
+        val thread = message.createThreadChannel("[Not Populated]").await()
+
+        val entity = transaction(db) {
+            TicketEntity.new {
+                this.author = author
+                this.thread = thread.idLong
+                this.topic = topic
+                this.lastActive = Clock.System.now()
+            }
+        }
+
+        thread.manager.setName("[OPEN] Ticket ${entity.id.value}").await()
+        message.editMessage("$topic - ${entity.id.value}").await()
+
+        transaction(db) {
+            val userTicket = userTicketEntity(author)
+            userTicket.openTickets++
+            userTicket.totalTickets++
+        }
+
+        return Pair(entity, thread)
+    }
+
+    fun getTicket(id: Int) : Pair<TicketEntity?, ThreadChannel?> {
+        val entity = transaction(db) { TicketEntity.findById(id) } ?: return Pair(null, null)
+        val thread = jda.getThreadChannelById(entity.thread)
+
+        return Pair(entity, thread)
+    }
+
+    fun closeTicket(id: Int) : Boolean {
+        val entity = transaction(db) { TicketEntity.findById(id) } ?: return false
+        val user = userTicketEntity(entity.author)
+
+        val thread = jda.getThreadChannelById(entity.thread) ?: return false
+        thread.manager.setName("[CLOSED] Ticket ${entity.id.value}").queue()
+        thread.manager.setArchived(true).queue()
+        transaction(db) {
+            TicketIncludeTable.deleteWhere { this.ticket eq entity.id.value }
+            entity.delete()
+            user.openTickets--
+        }
+        return true
+    }
+
+    fun messageTicketIncludes(id: Int, accept: (Long, PrivateChannel) -> Unit, error: (Long, Throwable) -> Unit) {
+        transaction(db) {
+            val ticket = TicketEntity.findById(id) ?: return@transaction
+            openDMWithID(ticket.author, accept, error)
+
+            TicketIncludeTable.selectAll().where { TicketIncludeTable.ticket eq ticket.id.value }.forEach {
+                openDMWithID(it[TicketIncludeTable.user], accept, error)
+            }
+        }
+    }
+
+    fun includedInTicket(id: Int, user: Long) =
+        transaction(db) { !TicketIncludeEntity.find {
+            TicketIncludeTable.ticket eq id and (TicketIncludeTable.user eq user)
+        }.empty() || TicketEntity.findById(id)?.author == user }
+
+    private fun openDMWithID(user: Long, accept: (Long, PrivateChannel) -> Unit, error: (Long, Throwable) -> Unit) =
+        jda.openPrivateChannelById(user).queue({ accept(user, it) }, { error(user, it) })
 
     fun openDM(user: Long, accept: (PrivateChannel) -> Unit, error: (Throwable) -> Unit) =
         jda.openPrivateChannelById(user).queue(accept, error)

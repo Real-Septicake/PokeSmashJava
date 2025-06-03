@@ -14,6 +14,7 @@ object PokeMeta {
     val DEV_CHANNEL_ONLY: CloudKey<Boolean> = cloudKey("dev-channel-only")
 
     val GUILDS_ONLY: CloudKey<Boolean> = cloudKey("guild-only")
+    val PRIVATE_ONLY: CloudKey<Boolean> = cloudKey("private-only")
 
     val COMMANDS_ENABLED: CloudKey<Boolean> = cloudKey("commands-enabled")
 
@@ -40,6 +41,11 @@ object PokeMeta {
     @Suppress("UNUSED_PARAMETER")
     fun <T> guildOnlyModifier(guildOnly: GuildOnly, builder: Builder<T>): Builder<T> {
         return builder.meta(GUILDS_ONLY, true)
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun <T> privateOnlyModifier(privateOnly: PrivateOnly, builder: Builder<T>): Builder<T> {
+        return builder.meta(PRIVATE_ONLY, true)
     }
 
     @Suppress("UNUSED_PARAMETER")
