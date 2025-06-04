@@ -416,10 +416,16 @@ class TicketCommands(
         }
 
         var response = "[Error obtaining included users]"
+        var failed = false
 
         transaction(bot.db) {
             val included = mutableListOf<Long>()
-            val ticket = TicketEntity.findById(id)!!
+            val ticket = TicketEntity.findById(id)
+            if(ticket == null) {
+                event.hook.sendMessage("Ticket does not exist").queue()
+                failed = true
+                return@transaction
+            }
             included += ticket.author
             TicketIncludeEntity.find { TicketIncludeTable.ticket eq id }
                 .forEach {
@@ -436,6 +442,10 @@ class TicketCommands(
                     }
                 "$acc\n$username${if (event.user.idLong == l) " [You]" else ""}"
             }
+        }
+
+        if(failed) {
+            return
         }
 
         (event.channel!! as PrivateChannel).sendMessage(response).queue()

@@ -140,10 +140,10 @@ class PokeCommands(
 
                 field("Smash Votes", smashes.toString())
                 field("Pass Votes", passes.toString())
-                field()
+                field("Smash Vote Percent", "%.2f%%".format((smashes.toDouble() / (smashes + passes)) * 100))
                 field("Smash Wins", smashWins.toString())
                 field("Pass Wins", passWins.toString())
-                field()
+                field("Smash Win Percent", "%.2f%%".format((smashWins.toDouble() / (smashWins + passWins)) * 100))
             }
         }
     }
@@ -188,10 +188,10 @@ class PokeCommands(
 
                 field("Smash Votes", smashes.toString())
                 field("Pass Votes", passes.toString())
-                field()
+                field("Smash Vote Percent", "%.2f%%".format((smashes.toDouble() / (smashes + passes)) * 100))
                 field("Smash Wins", smashWins.toString())
                 field("Pass Wins", passWins.toString())
-                field()
+                field("Smash Win Percent", "%.2f%%".format((smashWins.toDouble() / (smashWins + passWins)) * 100))
             }
         }
     }
@@ -221,10 +221,10 @@ class PokeCommands(
 
                 field("Smash Votes", pokemonEntity.smashes.toString())
                 field("Pass Votes", pokemonEntity.passes.toString())
-                field()
+                field("Smash Vote Percent", "%.2f%%".format((pokemonEntity.smashes.toDouble() / (pokemonEntity.smashes + pokemonEntity.passes)) * 100))
                 field("Smash Wins", pokemonEntity.smashWins.toString())
                 field("Pass Wins", pokemonEntity.passWins.toString())
-                field()
+                field("Smash Win Percent", "%.2f%%".format((pokemonEntity.smashWins.toDouble() / (pokemonEntity.smashWins + pokemonEntity.passWins)) * 100))
             }
         }
     }
@@ -238,9 +238,9 @@ class PokeCommands(
     ) {
         val event = interaction.interactionEvent() ?: return
         val guild = event.guild!!
-        val pollEntity = bot.pollEntity(guild.idLong, pokemon.id)
-
         event.deferReply().await()
+
+        val pollEntity = bot.pollEntity(guild.idLong, pokemon.id)
         if(pollEntity == null) {
             event.hook.sendMessage("This server has not completed a poll for ${pokemon.name.replaceFirstChar { it.titlecase() }}").queue()
             return
@@ -256,6 +256,7 @@ class PokeCommands(
 
                 field("Result", if(pollEntity.result == PollResult.SMASHED) "**Smashed!**" else "**Passed!**")
                 field("Votes", "${pollEntity.smashes} smashes | ${pollEntity.passes} passes")
+                field("Smash Percentage", "%.2f%%".format((pollEntity.smashes.toDouble() / (pollEntity.smashes + pollEntity.passes)) * 100))
             }
         }
     }
