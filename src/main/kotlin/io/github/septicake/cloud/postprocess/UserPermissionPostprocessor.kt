@@ -53,7 +53,7 @@ class UserPermissionPostprocessor<C>(
 
     private fun logFailedUse(meta: CommandMeta, context: CommandContext<C & Any>, interaction: GenericCommandInteractionEvent) {
         logger.warn {
-            val commandParameters = meta.getOrNull(PokeMeta.COMMAND_PARAMS)?.fold("") { acc, s ->
+            val commandParameters = meta.getOrNull(PokeMeta.COMMAND_PARAMS)?.fold("with params:") { acc, s ->
                 val get = context.getOrDefault<Any>(s, "[None]")
                 "$acc\n$s: $get"
             }.orEmpty()
@@ -63,7 +63,7 @@ class UserPermissionPostprocessor<C>(
             val guildId = interaction.guild?.id
             val guildName = interaction.guild?.name ?: "DMs"
 
-            "User \"$userId\" ($username) in $guildName ${if(guildId != null) "($guildId) " else ""}attempted to use command \"${interaction.fullCommandName}\" ${if(commandParameters.isNotEmpty()) "with params:" else ""}$commandParameters"
+            "User \"$userId\" ($username) in $guildName ${if(guildId != null) "($guildId) " else ""}attempted to use command \"${interaction.fullCommandName}\" $commandParameters"
         }
     }
 }

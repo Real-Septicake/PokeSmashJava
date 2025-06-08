@@ -22,7 +22,7 @@ class CountCommands(
 
     @GuildOnly
     @UserPermissions(whitelistOnly = true)
-    @Command(value = "set count <count>")
+    @Command("set count <count>")
     @CommandParams("count")
     fun countSetCommand(
         interaction: JDAInteraction,

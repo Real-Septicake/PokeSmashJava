@@ -29,15 +29,18 @@ class ChannelRestrictionPostprocessor<C>(
             if(info == null) {
                 interaction.reply("Server has not yet been populated.").setEphemeral(true).complete()
                 ConsumerService.interrupt()
+                return
             }
-            if(info!!.channel == null) {
+            if(info.channel == null) {
                 interaction.reply("Server has not yet had a channel set.").setEphemeral(true).complete()
                 ConsumerService.interrupt()
+                return
             }
             if(channel.idLong != info.channel) {
                 val jda = context.get<JDA>("JDA")
                 interaction.reply("Command cannot be used outside " + jda.getTextChannelById(info.channel!!).toString()).setEphemeral(true).complete()
                 ConsumerService.interrupt()
+                return
             }
         } else if(commandMeta.getOrDefault(PokeMeta.DEV_CHANNEL_ONLY, false)) {
             val channel = context.get<Channel>("InteractionChannel")

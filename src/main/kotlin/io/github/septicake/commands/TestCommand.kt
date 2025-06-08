@@ -13,7 +13,7 @@ class TestCommand(
     private val logger by getLogger()
 
     @Command("test")
-    suspend fun testCommand(
+    fun testCommand(
         interaction: JDAInteraction
     ) {
         val event = interaction.interactionEvent() ?: error("The interaction event should never be null")

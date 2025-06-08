@@ -281,6 +281,7 @@ class PokeCommands(
 
         val species = pokemon.species.fetchInfo()
         val flavor = species.flavorTexts.findLast { it.language.name == "en" }!!
+        val femaleChance = species.genderRate * 12.5
 
         logger.info { "Pokemon ${pokemon.name} (${pokemon.id}) info checked in server ${jdaGuild.name}" }
 
@@ -296,26 +297,27 @@ class PokeCommands(
 
                 timestamp = Clock.System.now().toJavaInstant()
 
-                field(name = "Name", value = pokemon.name.replaceFirstChar { it.titlecase() })
-                field(name = "Height", value = "${pokemon.height * 10}cm") // height is in decimeters (why)
-                field(name = "Weight", value = "%.1fkg".format(pokemon.weight / 10.0)) // weight is in hectograms (why)
-                field(name = "Species", value = species.name.replaceFirstChar { it.titlecase() })
+                field("Name", pokemon.name.replaceFirstChar { it.titlecase() })
+                field("Height", "${pokemon.height * 10}cm") // height is in decimeters (why)
+                field("Weight", "%.1fkg".format(pokemon.weight / 10.0)) // weight is in hectograms (why)
+                field("Species", species.name.replaceFirstChar { it.titlecase() })
                 field(
-                    name = "Types",
-                    value = pokemon.types.joinToString(separator = " & ") { type -> type.type.name.replaceFirstChar { it.titlecase() } })
-                field() // empty field to keep alignment
+                    "Types",
+                    pokemon.types.joinToString(separator = " & ") { type -> type.type.name.replaceFirstChar { it.titlecase() } })
+                field("Gender Ratio M/F", if (species.genderRate == -1)
+                    "Genderless" else "${100 - femaleChance}:${femaleChance}")
 
                 if (pokemonEntity != null)
-                    field("Global Votes", value = "${pokemonEntity.smashes} Smashes • ${pokemonEntity.passes} Passes")
+                    field("Global Votes", "${pokemonEntity.smashes} Smashes • ${pokemonEntity.passes} Passes")
                 else
-                    field("Global Votes", value = "No polls have been completed for this pokemon")
+                    field("Global Votes", "None")
 
                 if (pollEntity != null)
-                    field(name = "Server Votes", value = "${pollEntity.smashes} Smashes • ${pollEntity.passes} Passes")
+                    field("Server Votes", "${pollEntity.smashes} Smashes • ${pollEntity.passes} Passes")
                 else
-                    field() // empty field to keep alignment
+                    field("Server Votes", "None") // empty field to keep alignment
 
-                field(name = "National Dex Number", value = "${pokemon.id}")
+                field("National Dex Number", "${pokemon.id}")
 
                 footer {
                     name = "Info for ${pokemon.name.replaceFirstChar { it.titlecase() }} • Pokedex Entry: ${flavor.version.fetchInfo().names.find { it.language.name == "en" }!!.name}"
@@ -354,9 +356,9 @@ class PokeCommands(
                 timestamp = Clock.System.now().toJavaInstant()
 
 //                field(name = "Name", value = species.name.replaceFirstChar { it.titlecase() })
-                field(name = "Default Form", value = default.pokemon.name.replaceFirstChar { it.titlecase() })
-                field(name = "Genus", value = species.genera.find { it.language.name == "en" }!!.genus)
-                field(name = "Egg Groups", value = groups)
+                field("Default Form", default.pokemon.name.replaceFirstChar { it.titlecase() })
+                field("Genus", species.genera.find { it.language.name == "en" }!!.genus)
+                field("Egg Groups", groups)
 
                 footer { name = "First from " + generation.names.find { it.language.name == "en" }!!.name }
             }
