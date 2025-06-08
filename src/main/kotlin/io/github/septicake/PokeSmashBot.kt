@@ -178,7 +178,7 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
                 BlacklistTable,
                 // Ticket Tables
                 TicketTable,
-                UserInfoTable,
+                UserTicketTable,
                 TicketIncludeTable
             )
         }
@@ -358,7 +358,7 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
     }
 
     fun userTicketEntity(user: Long) = transaction(db) {
-        UserInfoEntity.findById(user) ?: UserInfoEntity.new(user) {
+        UserTicketEntity.findById(user) ?: UserTicketEntity.new(user) {
             openTickets = 0
             maxOpenTickets = 5
             totalTickets = 0
