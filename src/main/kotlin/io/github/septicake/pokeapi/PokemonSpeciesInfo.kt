@@ -16,6 +16,8 @@ data class PokemonSpeciesInfo(
     val flavorTexts: List<FlavorText>,
     val genera: List<Genus>,
     val generation: Generation,
+    @SerialName("gender_rate")
+    val genderRate: Int,
     val varieties: List<Variety>,
 ) {
     @Serializable

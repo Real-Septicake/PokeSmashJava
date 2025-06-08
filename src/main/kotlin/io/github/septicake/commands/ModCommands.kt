@@ -12,7 +12,6 @@ import io.github.septicake.cloud.annotations.UserPermissions
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.WhitelistEntity
 import io.github.septicake.db.WhitelistTable
-import io.github.septicake.pokeapi.PokemonInfo
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.Channel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
@@ -57,6 +56,7 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("whitelist remove <user>")
+    @CommandParams("user")
     suspend fun whitelistRemoveCommand(
         interaction: JDAInteraction,
         @Argument("user")
@@ -79,10 +79,11 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("set channel <channel>")
+    @CommandParams("channel")
     suspend fun setChannel(
         interaction: JDAInteraction,
-        @Argument("channel")
-        channel: Channel,
+        @Argument("channel", description = "Channel for `next` to be called in, and where announcements will be sent to")
+        channel: Channel
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().setEphemeral(true).await()
@@ -108,6 +109,7 @@ class ModCommands(
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
     @Command("populate <channel> [polls]")
+    @CommandParams("channel", "polls")
     suspend fun populateCommand(
         interaction: JDAInteraction,
         @Argument("channel", description = "Channel for `next` to be called in, and where announcements will be sent to")
@@ -141,51 +143,10 @@ class ModCommands(
     }
 
     @GuildOnly
-    @UserPermissions(guildOwnerOnly = true)
-    @Command("set poll <pokemon> <smashes> <passes>")
-    suspend fun addPollCommand(
-        interaction: JDAInteraction,
-        @Argument("pokemon")
-        pokemon: PokemonInfo,
-        @Argument("smashes")
-        smashes: Long,
-        @Argument("passes")
-        passes: Long,
-    ) {
-        val event = interaction.interactionEvent() ?: return
-        event.deferReply().setEphemeral(true).await()
-        try {
-            bot.setPollResults(event.guild!!.idLong, pokemon.id, smashes, passes)
-            event.hook.sendMessage("Poll result set.").await()
-        } catch (e: PokeSmashBot.ServerNotPopulatedException) {
-            event.hook.sendMessage("Server has not been populated yet.").await()
-        }
-    }
-
-    @GuildOnly
-    @UserPermissions(guildOwnerOnly = true)
-    @Command("remove poll <pokemon>")
-    suspend fun removePollCommand(
-        interaction: JDAInteraction,
-        @Argument("pokemon")
-        pokemon: PokemonInfo,
-    ) {
-        val event = interaction.interactionEvent() ?: return
-        event.deferReply().setEphemeral(true).await()
-        try {
-            bot.removePollResults(event.guild!!.idLong, pokemon.id)
-            event.hook.sendMessage("Poll result removed.").await()
-        } catch (e: PokeSmashBot.ServerNotPopulatedException) {
-            event.hook.sendMessage("Server has not been populated yet.").await()
-        } catch (e: PokeSmashBot.PollDoesNotExistException) {
-            event.hook.sendMessage("Poll does not exist.").await()
-        }
-    }
-
-    @GuildOnly
     @BlacklistSensitive
     @UserPermissions(whitelistOnly = true)
     @Command("message <text>")
+    @CommandParams("text")
     suspend fun messageCommand(
         interaction: JDAInteraction,
         @Argument("text")

@@ -178,7 +178,7 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
                 BlacklistTable,
                 // Ticket Tables
                 TicketTable,
-                UserTicketTable,
+                UserInfoTable,
                 TicketIncludeTable
             )
         }
@@ -335,37 +335,6 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
         }
     }
 
-    fun removePollResults(guildId: Long, pokemonId: Int) {
-        val guildInfo = transaction(db) {
-            GuildEntity.findById(guildId)
-        } ?: throw ServerNotPopulatedException()
-
-
-        val poll = pollEntity(guildId, pokemonId) ?: throw PollDoesNotExistException()
-
-        val pokemonInfo = transaction(db) {
-            PokemonEntity.findById(pokemonId)
-        }!!
-
-        if (poll.result == PollResult.SMASHED) {
-            transaction(db) {
-                guildInfo.smashes -= 1
-                pokemonInfo.smashWins -= 1
-            }
-        } else {
-            transaction(db) {
-                guildInfo.passes -= 1
-                pokemonInfo.passWins -= 1
-            }
-        }
-        transaction(db) {
-            pokemonInfo.smashes -= poll.smashes
-            pokemonInfo.passes -= poll.passes
-            poll.delete()
-        }
-
-    }
-
     fun userServerWhitelisted(guild: Long, user: Long): Boolean {
         return transaction(db) {
             !WhitelistTable.selectAll()
@@ -389,7 +358,7 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
     }
 
     fun userTicketEntity(user: Long) = transaction(db) {
-        UserTicketEntity.findById(user) ?: UserTicketEntity.new(user) {
+        UserInfoEntity.findById(user) ?: UserInfoEntity.new(user) {
             openTickets = 0
             maxOpenTickets = 5
             totalTickets = 0
@@ -466,6 +435,15 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
 
     fun openDM(user: Long, accept: (PrivateChannel) -> Unit, error: (Throwable) -> Unit) =
         jda.openPrivateChannelById(user).queue(accept, error)
+
+    fun username(user: Long, failure: () -> Unit = {}) : String {
+        return try {
+            jda.retrieveUserById(user).complete().effectiveName
+        } catch(_: Throwable) {
+            failure()
+            "[Unknown]"
+        }
+    }
 
     object PokeSmashThreadFactory : ThreadFactory {
         private val threadGroup: ThreadGroup = currentThread.threadGroup

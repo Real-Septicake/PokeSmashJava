@@ -2,27 +2,29 @@
 
 package io.github.septicake.commands
 
-import dev.minn.jda.ktx.coroutines.await
 import io.github.septicake.PokeSmashBot
 import io.github.septicake.PokeSmashConstants
-import io.github.septicake.cloud.annotations.BlacklistSensitive
-import io.github.septicake.cloud.annotations.LengthMax
-import io.github.septicake.cloud.annotations.PrivateOnly
-import io.github.septicake.cloud.annotations.UserPermissions
+import io.github.septicake.cloud.annotations.*
 import io.github.septicake.db.TicketEntity
 import io.github.septicake.db.TicketIncludeEntity
 import io.github.septicake.db.TicketIncludeTable
 import io.github.septicake.db.TicketTable
+import io.github.septicake.util.sendMessage
 import io.github.septicake.util.ticketEmbed
+import io.github.septicake.util.toDiscordTimestamp
 import kotlinx.datetime.Clock
+import kotlinx.datetime.toJavaInstant
 import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import org.incendo.cloud.annotation.specifier.Greedy
 import org.incendo.cloud.annotations.Argument
 import org.incendo.cloud.annotations.Command
 import org.incendo.cloud.discord.jda5.JDAInteraction
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.error
 import org.slf4j.kotlin.getLogger
@@ -80,9 +82,70 @@ class TicketCommands(
         )
     }
 
+    @Command("ticket list")
+    @PrivateOnly
+    fun ticketListCommand(
+        interaction: JDAInteraction
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+
+        val response = transaction(bot.db) {
+            TicketTable.select(TicketTable.id, TicketTable.topic, TicketTable.author).orderBy(
+                TicketTable.id to SortOrder.ASC
+            ).where {
+                TicketTable.author eq event.user.idLong
+            }.foldIndexed("Open tickets:") { i, acc, r ->
+                acc + "\n$i. Ticket ${r[TicketTable.id]} - `${r[TicketTable.topic]}`"
+            }
+        }
+        event.hook.sendMessage(response).queue()
+    }
+
+    @Command("ticket info <id>")
+    @PrivateOnly
+    suspend fun ticketInfoCommand(
+        interaction: JDAInteraction,
+        @Argument("id")
+        id: Int
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+
+        val (ticket, thread) = bot.getTicket(id)
+        if (ticket == null || thread == null) {
+            event.hook.sendMessage(
+                "Could not get ticket info, " +
+                        "please double check the DM history to make sure this is the correct ID " +
+                        "and that the ticket is still open"
+            ).queue()
+            return
+        }
+
+        if (!bot.includedInTicket(ticket.id.value, event.user.idLong) && PokeSmashConstants.ownerId != event.user.idLong) {
+            event.hook.sendMessage("This is not your ticket").queue()
+            logger.warn { "User ${event.user.effectiveName} tried to check ticket ${ticket.id.value} info" }
+            return
+        }
+
+        event.hook.sendMessage {
+            embed {
+                title = "Ticket " + ticket.id.value
+                description = ticket.topic
+                timestamp = Clock.System.now().toJavaInstant()
+
+                field("Author", if (event.user.idLong == ticket.author) "You" else bot.username(ticket.author) {
+                    logNonexistentUser(ticket.author, ticket.id.value)
+                })
+                field("Opened", ticket.opened.toDiscordTimestamp())
+                field("Last Active", ticket.lastActive.toDiscordTimestamp())
+            }
+        }
+    }
+
     @Command("ticket include <id> <user>")
     @PrivateOnly
-    suspend fun ticketIncludeCommand(
+    fun ticketIncludeCommand(
         interaction: JDAInteraction,
         @Argument("id")
         id: Int,
@@ -117,11 +180,7 @@ class TicketCommands(
         }
 
         val name = if (PokeSmashConstants.ownerId == event.user.idLong) "owner" else event.user.effectiveName
-        val username = try {
-            bot.jda.retrieveUserById(user).await().effectiveName
-        } catch(_: Throwable) {
-            "[Unknown]" // should never be seen
-        }
+        val username = bot.username(user)
 
         bot.openDM(user, {
             val now = Clock.System.now()
@@ -224,7 +283,7 @@ class TicketCommands(
 
     @Command("ticket uninclude <id> <user>")
     @PrivateOnly
-    suspend fun ticketUnincludeCommand(
+    fun ticketUnincludeCommand(
         interaction: JDAInteraction,
         @Argument("id")
         id: Int,
@@ -267,12 +326,7 @@ class TicketCommands(
             ticket.lastActive = now
         }
 
-        val username = try {
-            bot.jda.retrieveUserById(user).await().effectiveName
-        } catch (_: Throwable) {
-            logNonexistentUser(user, ticket.id.value)
-            "[Unknown]"
-        }
+        val username = bot.username(user) { logNonexistentUser(user, ticket.id.value) }
 
         bot.openDM(user, {
             it.ticketEmbed(
@@ -396,7 +450,6 @@ class TicketCommands(
     }
 
     @Command("ticket included <id>")
-    @PrivateOnly
     fun ticketIncludedCommand(
         interaction: JDAInteraction,
         @Argument("id")
@@ -433,13 +486,7 @@ class TicketCommands(
                 }
 
             response = included.fold("Users included in ticket $id:") { acc, l ->
-                val username =
-                    try {
-                        bot.jda.retrieveUserById(l).complete().effectiveName
-                    } catch (e: Throwable) {
-                        logNonexistentUser(l, ticket.id.value)
-                        "[Unknown]"
-                    }
+                val username = bot.username(l) { logNonexistentUser(l, ticket.id.value) }
                 "$acc\n$username${if (event.user.idLong == l) " [You]" else ""}"
             }
         }
@@ -448,8 +495,28 @@ class TicketCommands(
             return
         }
 
-        (event.channel!! as PrivateChannel).sendMessage(response).queue()
+        (event.channel!! as MessageChannel).sendMessage(response).queue()
         event.hook.sendMessage("Included users sent").queue()
+    }
+
+    @Command("ticket opened count")
+    @ChannelRestriction(devChannel = true)
+    @UserPermissions(botOwnerOnly = true)
+    fun ticketListOpenCommand(
+        interaction: JDAInteraction
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+
+        val count = transaction(bot.db) {
+            TicketTable.selectAll().count()
+        }
+
+        event.hook.sendMessage(
+            "There " +
+                    "${if(count != 1L) "are" else "is"} " +
+                    "$count currently open ticket${if(count != 1L) "s" else ""}"
+        ).queue()
     }
 
     @Command("ticket close <id> <reason>")

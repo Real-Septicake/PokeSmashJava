@@ -11,7 +11,10 @@ import io.github.septicake.db.BlacklistEntity
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.GuildTable
 import io.github.septicake.db.WhitelistTable
+import io.github.septicake.util.sendMessage
+import io.github.septicake.util.toDiscordTimestamp
 import kotlinx.datetime.Clock
+import kotlinx.datetime.toJavaInstant
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException
 import org.incendo.cloud.annotation.specifier.Greedy
 import org.incendo.cloud.annotations.Argument
@@ -140,6 +143,9 @@ class DevCommands(
                 } catch (e: InsufficientPermissionException) {
                     logger.error { "Could not send message to ${it[GuildTable.name]}, lacking permissions" }
                     lackPerms++
+                } catch (e: NullPointerException) {
+                    logger.error { "Could not send message to ${it[GuildTable.name]}, channel was deleted" }
+                    noChannel++
                 }
 
                 sent++
@@ -231,6 +237,47 @@ class DevCommands(
 
             channel.sendMessage("You have been removed from the blacklist").queue()
         }, { event.hook.sendMessage("User does not exist").queue() })
+    }
+
+    @Command("blacklist info <user>")
+    @ChannelRestriction(devChannel = true)
+    @UserPermissions(botOwnerOnly = true)
+    @CommandParams("user")
+    @CommandDescription("Only usable by bot developer")
+    suspend fun blacklistInfoCommand(
+        interaction: JDAInteraction,
+        @Argument("user")
+        user: Long
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+
+        val entity = bot.userBlacklisted(user)
+        if(entity == null) {
+            event.hook.sendMessage("User \"$user\" is not blacklisted").queue()
+            return
+        }
+
+        event.hook.sendMessage {
+            embed {
+                title = "Blacklisted User: $user"
+                description = entity.reason
+                timestamp = Clock.System.now().toJavaInstant()
+
+                field("since", entity.since.toDiscordTimestamp())
+            }
+        }
+    }
+
+    @Command("servers")
+    @ChannelRestriction(devChannel = true)
+    @UserPermissions(botOwnerOnly = true)
+    @CommandDescription("Only usable by bot developer")
+    fun serverCommand(
+        interaction: JDAInteraction
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.reply("The bot is in ${bot.jda.selfUser.mutualGuilds.size} servers").queue()
     }
 
     @Command("shutdown [test]")
