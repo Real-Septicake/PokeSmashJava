@@ -3,10 +3,7 @@
 package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
-import io.github.septicake.cloud.annotations.ChannelRestriction
-import io.github.septicake.cloud.annotations.CommandParams
-import io.github.septicake.cloud.annotations.LengthMax
-import io.github.septicake.cloud.annotations.UserPermissions
+import io.github.septicake.cloud.annotations.*
 import io.github.septicake.db.BlacklistEntity
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.GuildTable
@@ -20,6 +17,7 @@ import org.incendo.cloud.annotation.specifier.Greedy
 import org.incendo.cloud.annotations.Argument
 import org.incendo.cloud.annotations.Command
 import org.incendo.cloud.annotations.CommandDescription
+import org.incendo.cloud.annotations.Default
 import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
@@ -27,6 +25,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.error
 import org.slf4j.kotlin.getLogger
 
+@Category(CategoryEnum.DEV)
 class DevCommands(
     private val bot: PokeSmashBot
 ) {
@@ -35,10 +34,12 @@ class DevCommands(
     @Command("allow commands <val>")
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("val")
-    @CommandDescription("Only usable by bot developer")
+    @CommandDescription("Allow or disallow certain commands")
+    @ProperName("Allow commands")
+    @LongDescription("Honest to god this doesn't do sh\\*t")
     fun commandToggleCommand(
         interaction: JDAInteraction,
-        @Argument("val")
+        @Argument("val", description = "Whether polls should be enabled")
         value: Boolean
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -49,9 +50,13 @@ class DevCommands(
     @Command("whitelist strip <user>")
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
+    @CommandDescription("Strips user of whitelist permissions")
+    @ProperName("Strip whitelist")
+    @LongDescription("Strips a user of their whitelist privilege in all servers they are whitelisted in.\n" +
+            "This does not override the whitelist privileges given by guild owners.")
     fun whitelistStripCommand(
         interaction: JDAInteraction,
-        @Argument("user")
+        @Argument("user", description = "User to strip from whitelist")
         user: Long
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -67,15 +72,17 @@ class DevCommands(
     }
 
     @Command("msg <server> <msg>")
-    @CommandDescription("Only usable by bot developer")
+    @CommandDescription("Messages a server's channel")
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("server", "msg")
+    @ProperName("Message Server")
+    @LongDescription("Sends a message to the server's channel")
     fun messageCommand(
         interaction: JDAInteraction,
-        @Argument("server")
+        @Argument("server", description = "Server to message")
         server: Long,
-        @Argument("msg")
+        @Argument("msg", description = "Message to send")
         @Greedy
         str: String
     ) {
@@ -110,13 +117,16 @@ class DevCommands(
     }
 
     @Command("announce <msg>")
-    @CommandDescription("Only usable by bot developer")
+    @CommandDescription("Announces the message to all servers")
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("msg")
+    @ProperName("Announce")
+    @LongDescription("Sends an announcement to all servers, the sequence `%owner` can be used to mention" +
+            " the server owner. Some further information is returned as a response to the original command invocation.")
     fun announceCommand(
         interaction: JDAInteraction,
-        @Argument("msg")
+        @Argument("msg", description = "Message to announce")
         @Greedy
         msg: String
     ) {
@@ -162,11 +172,15 @@ class DevCommands(
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("user", "reason")
+    @ProperName("Warn")
+    @CommandDescription("Warns a user for the specified reason")
+    @LongDescription("Sends a DM to the specified user warning them for the specified reason, no other " +
+            "actions are taken by this command")
     fun warnCommand(
         interaction: JDAInteraction,
-        @Argument("user")
+        @Argument("user", description = "User to warn")
         user: Long,
-        @Argument("reason")
+        @Argument("reason", description = "Reason for warning")
         reason: String
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -182,12 +196,15 @@ class DevCommands(
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("user", "reason")
-    @CommandDescription("Only usable by bot developer")
+    @CommandDescription("Adds a user to the blacklist")
+    @ProperName("Blacklist add")
+    @LongDescription("Adds a user to the blacklist, preventing them from using certain commands. " +
+            "The user is alerted of the fact that they have been blacklisted")
     fun blacklistAddCommand(
         interaction: JDAInteraction,
-        @Argument("user")
+        @Argument("user", description = "User to blacklist")
         user: Long,
-        @Argument("reason")
+        @Argument("reason", description = "Reason for blacklist")
         @LengthMax(255)
         reason: String
     ) {
@@ -216,10 +233,13 @@ class DevCommands(
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("user")
-    @CommandDescription("Only usable by bot developer")
+    @CommandDescription("Removes a user from the blacklist")
+    @ProperName("Blacklist remove")
+    @LongDescription("Removes a user from the blacklist, allowing them to use \"blacklist sensitive\" " +
+            "commands again. The user is alerted that they were removed from the blacklist")
     fun blacklistRemoveCommand(
         interaction: JDAInteraction,
-        @Argument("user")
+        @Argument("user", description = "User to remove from blacklist")
         user: Long
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -243,10 +263,12 @@ class DevCommands(
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("user")
-    @CommandDescription("Only usable by bot developer")
+    @CommandDescription("Retrieves the info on a user's blacklisting")
+    @ProperName("Blacklist info")
+    @LongDescription("Retrieves info on a user's blacklisting, being why they were blacklisted and when")
     suspend fun blacklistInfoCommand(
         interaction: JDAInteraction,
-        @Argument("user")
+        @Argument("user", description = "User to query blacklist info of")
         user: Long
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -272,7 +294,9 @@ class DevCommands(
     @Command("servers")
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
-    @CommandDescription("Only usable by bot developer")
+    @CommandDescription("Gets the number of servers the bot is in")
+    @ProperName("Servers")
+    @LongDescription("Shows the number of servers the bot is in, no further information is given")
     fun serverCommand(
         interaction: JDAInteraction
     ) {
@@ -284,10 +308,13 @@ class DevCommands(
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("test")
-    @CommandDescription("Only usable by bot developer")
+    @CommandDescription("Shuts down the bot")
+    @ProperName("Shutdown")
+    @LongDescription("Shuts down the bot, it is announced if `test` is not set to true")
     suspend fun shutdownCommand(
         interaction: JDAInteraction,
         @Argument("test", description = "The shutdown is for a test and does not announce the shutdown to servers")
+        @Default("true")
         test: Boolean = true
     ) {
         val event = interaction.interactionEvent() ?: return

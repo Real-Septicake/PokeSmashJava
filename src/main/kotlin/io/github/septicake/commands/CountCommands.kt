@@ -3,13 +3,12 @@
 package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
-import io.github.septicake.cloud.annotations.CommandParams
-import io.github.septicake.cloud.annotations.GuildOnly
-import io.github.septicake.cloud.annotations.UserPermissions
+import io.github.septicake.cloud.annotations.*
 import io.github.septicake.db.GuildEntity
 import org.incendo.cloud.annotation.specifier.Range
 import org.incendo.cloud.annotations.Argument
 import org.incendo.cloud.annotations.Command
+import org.incendo.cloud.annotations.CommandDescription
 import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.debug
@@ -21,12 +20,16 @@ class CountCommands(
     private val logger by getLogger()
 
     @GuildOnly
-    @UserPermissions(whitelistOnly = true)
+    @UserPermissions(guildOwnerOnly = true)
     @Command("set count <count>")
     @CommandParams("count")
+    @ProperName("Set count")
+    @CommandDescription("Sets the numbers of polls sent")
+    @LongDescription("Sets the number of polls that are sent by a call to `/next`")
+    @Category(CategoryEnum.SETUP)
     fun countSetCommand(
         interaction: JDAInteraction,
-        @Argument(value = "count", description = "new number of polls per call, can only be used by whitelisted users, value must be within 1 and 10")
+        @Argument(value = "count", description = "New number of polls, value must be within 1 and 10")
         @Range(min = "1", max = "10")
         count: Int
     ) {
@@ -44,6 +47,10 @@ class CountCommands(
 
     @GuildOnly
     @Command("count")
+    @ProperName("Get count")
+    @CommandDescription("Gets the number of polls that get sent")
+    @LongDescription("Gets the number of polls that are sent by a call to `/next`")
+    @Category(CategoryEnum.INFORMATION)
     fun countCommand(
         interaction: JDAInteraction
     ) {

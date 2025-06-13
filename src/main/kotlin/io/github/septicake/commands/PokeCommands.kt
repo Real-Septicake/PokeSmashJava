@@ -37,7 +37,11 @@ class PokeCommands(
     @Command("reset")
     @GuildOnly
     @UserPermissions(whitelistOnly = true)
-    @CommandDescription("Reset poll count, starting from bulbasaur, or whatever national dex number 1 is")
+    @CommandDescription("Reset poll count")
+    @ProperName("Reset")
+    @LongDescription("Resets the current poll back to bulbasaur, these new polls overwrite the previous " +
+            "poll's data, but the poll itself and thread pertaining to the poll remain")
+    @Category(CategoryEnum.MANAGEMENT)
     fun resetCommand(
         interaction: JDAInteraction
     ) {
@@ -60,6 +64,9 @@ class PokeCommands(
     @ChannelRestriction(serverChannel = true)
     @CommandsEnabled
     @CommandDescription("Send the next polls")
+    @ProperName("Next")
+    @LongDescription("Sends in the next set of polls")
+    @Category(CategoryEnum.MANAGEMENT)
     suspend fun nextCommand(
         interaction: JDAInteraction
     ) {
@@ -104,6 +111,10 @@ class PokeCommands(
     }
 
     @Command("global totals")
+    @ProperName("Global totals")
+    @CommandDescription("Gets the total global poll information")
+    @LongDescription("Gets global information about the numbers of smashes and passes across all servers")
+    @Category(CategoryEnum.INFORMATION)
     suspend fun globalTotalCommand(
         interaction: JDAInteraction
     ) {
@@ -150,6 +161,10 @@ class PokeCommands(
 
     @Command("server totals")
     @GuildOnly
+    @ProperName("Server totals")
+    @CommandDescription("Gets the total server poll information")
+    @LongDescription("Gets information about the numbers of smashes and passes across every poll in the server")
+    @Category(CategoryEnum.INFORMATION)
     suspend fun serverTotalCommand(
         interaction: JDAInteraction
     ) {
@@ -197,9 +212,13 @@ class PokeCommands(
     }
 
     @Command("global pokemon <pokemon>")
+    @ProperName("Global pokemon info")
+    @CommandDescription("Gets the global poll information on the pokemon")
+    @LongDescription("Gets global information about the polls completed for the pokemon")
+    @Category(CategoryEnum.INFORMATION)
     suspend fun globalPokemonCommand(
         interaction: JDAInteraction,
-        @Argument("pokemon")
+        @Argument("pokemon", description = "Pokemon to check the information of")
         pokemon: PokemonInfo
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -231,9 +250,13 @@ class PokeCommands(
 
     @Command("server pokemon <pokemon>")
     @GuildOnly
+    @ProperName("Server pokemon info")
+    @CommandDescription("Gets the server poll information for the pokemon")
+    @LongDescription("Gets info on the server's poll for the pokemon, if one has been completed")
+    @Category(CategoryEnum.INFORMATION)
     suspend fun serverPokemonCommand(
         interaction: JDAInteraction,
-        @Argument("pokemon")
+        @Argument("pokemon", description = "Pokemon to check the information of")
         pokemon: PokemonInfo
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -263,6 +286,10 @@ class PokeCommands(
 
     @GuildOnly
     @Command("pokemon info <pokemon>")
+    @ProperName("Pokemon info")
+    @CommandDescription("Gets the info on the specified pokemon")
+    @LongDescription("Gets useful information on the specified pokemon")
+    @Category(CategoryEnum.INFORMATION)
     suspend fun pokemonInfoCommand(
         interaction: JDAInteraction,
         @Argument(
@@ -315,7 +342,7 @@ class PokeCommands(
                 if (pollEntity != null)
                     field("Server Votes", "${pollEntity.smashes} Smashes • ${pollEntity.passes} Passes")
                 else
-                    field("Server Votes", "None") // empty field to keep alignment
+                    field("Server Votes", "None")
 
                 field("National Dex Number", "${pokemon.id}")
 
@@ -327,9 +354,13 @@ class PokeCommands(
     }
 
     @Command("species info <species>")
+    @ProperName("Species info")
+    @CommandDescription("Gets info on the specified species")
+    @LongDescription("Gets useful information on the specified pokemon species")
+    @Category(CategoryEnum.INFORMATION)
     suspend fun speciesInfoCommand(
         interaction: JDAInteraction,
-        @Argument("species")
+        @Argument("species", description = "The pokemon species to query")
         species: PokemonSpeciesInfo
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -355,7 +386,6 @@ class PokeCommands(
 
                 timestamp = Clock.System.now().toJavaInstant()
 
-//                field(name = "Name", value = species.name.replaceFirstChar { it.titlecase() })
                 field("Default Form", default.pokemon.name.replaceFirstChar { it.titlecase() })
                 field("Genus", species.genera.find { it.language.name == "en" }!!.genus)
                 field("Egg Groups", groups)

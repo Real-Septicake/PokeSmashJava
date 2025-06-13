@@ -4,9 +4,12 @@ import dev.minn.jda.ktx.messages.MessageCreate
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
+import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.WebhookClient
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
+
+val EMPTY = Pair(EmbedBuilder. ZERO_WIDTH_SPACE, EmbedBuilder.ZERO_WIDTH_SPACE)
 
 fun <T : MessageChannel> T.ticketEmbed(
     id: Int,

@@ -9,18 +9,20 @@ import io.github.septicake.db.TicketEntity
 import io.github.septicake.db.TicketIncludeEntity
 import io.github.septicake.db.TicketIncludeTable
 import io.github.septicake.db.TicketTable
+import io.github.septicake.util.EMPTY
 import io.github.septicake.util.sendMessage
 import io.github.septicake.util.ticketEmbed
 import io.github.septicake.util.toDiscordTimestamp
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import net.dv8tion.jda.api.entities.channel.ChannelType
-import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import org.incendo.cloud.annotation.specifier.Greedy
 import org.incendo.cloud.annotations.Argument
 import org.incendo.cloud.annotations.Command
+import org.incendo.cloud.annotations.CommandDescription
+import org.incendo.cloud.annotations.Default
 import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
@@ -30,6 +32,7 @@ import org.slf4j.kotlin.error
 import org.slf4j.kotlin.getLogger
 import org.slf4j.kotlin.warn
 
+@Category(CategoryEnum.TICKET)
 class TicketCommands(
     private val bot: PokeSmashBot
 ) {
@@ -44,9 +47,14 @@ class TicketCommands(
     @Command("ticket open <topic>")
     @PrivateOnly
     @BlacklistSensitive
+    @ProperName("Ticket open")
+    @CommandDescription("Opens a ticket")
+    @LongDescription("Opens a ticket, allowing for back and forth communication about a topic. " +
+            "You can only have a limited amount open at a time, so if you need to open a new one, try to get an older " +
+            "ticket closed first")
     suspend fun ticketOpenCommand(
         interaction: JDAInteraction,
-        @Argument("topic")
+        @Argument("topic", description = "A short blurb about the reason behind the ticket. Limited to 75 characters")
         @Greedy
         @LengthMax(75)
         topic: String
@@ -84,6 +92,9 @@ class TicketCommands(
 
     @Command("ticket list")
     @PrivateOnly
+    @ProperName("Ticket list")
+    @CommandDescription("Lists your open tickets")
+    @LongDescription("Lists the tickets that you have open at the moment")
     fun ticketListCommand(
         interaction: JDAInteraction
     ) {
@@ -104,9 +115,13 @@ class TicketCommands(
 
     @Command("ticket info <id>")
     @PrivateOnly
+    @ProperName("Ticket info")
+    @CommandDescription("Lists info about the ticket")
+    @LongDescription("Lists information about the ticket, including the author, topic, and when the last " +
+            "activity was")
     suspend fun ticketInfoCommand(
         interaction: JDAInteraction,
-        @Argument("id")
+        @Argument("id", description = "The id of the ticket to list information about")
         id: Int
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -145,11 +160,16 @@ class TicketCommands(
 
     @Command("ticket include <id> <user>")
     @PrivateOnly
+    @BlacklistSensitive
+    @ProperName("Ticket include")
+    @CommandDescription("Includes a user in the ticket")
+    @LongDescription("Includes a user in the ticket, allowing them to be notified of messages in the ticket " +
+            "and giving them permission to send messages as well. The user will be alerted that they were included")
     fun ticketIncludeCommand(
         interaction: JDAInteraction,
-        @Argument("id")
+        @Argument("id", description = "The id of the ticket to include the user in")
         id: Int,
-        @Argument("user")
+        @Argument("user", description = "The id of the user to include in the ticket")
         user: Long
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -217,12 +237,18 @@ class TicketCommands(
 
     @Command("ticket leave <id> [silent]")
     @PrivateOnly
+    @ProperName("Ticket leave")
+    @CommandDescription("Leaves the ticket, optionally silently")
+    @LongDescription("Leaves the specified ticket, you will no longer be notified of messages sent, nor will" +
+            " you be allowed to send messages in the ticket until included back. If `silent` is set to true, " +
+            "the other included users will not be notified of you leaving the ticket.")
     fun ticketLeaveCommand(
         interaction: JDAInteraction,
-        @Argument("id")
+        @Argument("id", description = "The id of the ticket to leave from")
         id: Int,
-        @Argument("silent")
-        silent: Boolean = false
+        @Argument("silent", description = "If you leaving should not be announced")
+        @Default("true")
+        silent: Boolean = true
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().setEphemeral(true).queue()
@@ -283,11 +309,17 @@ class TicketCommands(
 
     @Command("ticket uninclude <id> <user>")
     @PrivateOnly
+    @BlacklistSensitive
+    @ProperName("Ticket uninclude")
+    @CommandDescription("Unincludes a user from the ticket")
+    @LongDescription("Unincludes the user from the ticket, they will no longer receive messages about the " +
+            "ticket, nor will they be allowed to message the ticket until included back. The user will be alerted" +
+            " that they were unincluded from the ticket")
     fun ticketUnincludeCommand(
         interaction: JDAInteraction,
-        @Argument("id")
+        @Argument("id", description = "The id of the ticket to uninclude the user from")
         id: Int,
-        @Argument("user")
+        @Argument("user", description = "The id of the user to uninclude from the ticket")
         user: Long
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -355,11 +387,14 @@ class TicketCommands(
 
     @Command("ticket message <id> <message>")
     @PrivateOnly
+    @ProperName("Ticket message")
+    @CommandDescription("Message a ticket")
+    @LongDescription("Sends a message to the specified ticket, any included users also receive the message")
     fun ticketMessageCommand(
         interaction: JDAInteraction,
-        @Argument("id")
+        @Argument("id", description = "The id of the ticket to message")
         id: Int,
-        @Argument("message")
+        @Argument("message", description = "The message to send")
         @Greedy
         message: String
     ) {
@@ -398,6 +433,7 @@ class TicketCommands(
             channel.ticketEmbed(
                 ticket.id.value, ticket.topic + " Messaged", message,
                 Pair("From", if (user == event.user.idLong) "You" else event.user.effectiveName),
+                if (user == ticket.author) Pair("ID", event.user.id) else EMPTY,
                 timestamp = now, image = event.user.avatarUrl
             )
         }, { user, _ -> logNonexistentUser(user, ticket.id.value) })
@@ -407,9 +443,13 @@ class TicketCommands(
 
     @Command("ticket reply <message>")
     @UserPermissions(botOwnerOnly = true)
+    @ProperName("Ticket reply")
+    @CommandDescription("Reply to the ticket")
+    @LongDescription("Sends a message to the ticket corresponding to the thread this command is used it, " +
+            "included also receive the message")
     fun ticketReplyCommand(
         interaction: JDAInteraction,
-        @Argument("message")
+        @Argument("message", description = "The message to reply with")
         @Greedy
         message: String
     ) {
@@ -450,21 +490,24 @@ class TicketCommands(
     }
 
     @Command("ticket included <id>")
+    @ProperName("Ticket included")
+    @CommandDescription("Lists users included in the ticket")
+    @LongDescription("Lists all users included in the specified ticket")
     fun ticketIncludedCommand(
         interaction: JDAInteraction,
-        @Argument("id")
+        @Argument("id", description = "The id of the ticket to list included members of")
         id: Int
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().setEphemeral(true).queue()
 
-        if (!bot.includedInTicket(id, event.user.idLong) && event.user.idLong != PokeSmashConstants.ownerId) {
-            event.hook.sendMessage("This is not your ticket, are you sure you used the correct ID?").queue()
+        if(event.user.idLong != PokeSmashConstants.ownerId && event.channelType != ChannelType.PRIVATE) {
+            event.hook.sendMessage("Command must be used in a Private Channel (DM) with the bot.").queue()
             return
         }
 
-        if(event.user.idLong != PokeSmashConstants.ownerId && event.channelType != ChannelType.PRIVATE) {
-            event.hook.sendMessage("Command cannot be used here").queue()
+        if (!bot.includedInTicket(id, event.user.idLong) && event.user.idLong != PokeSmashConstants.ownerId) {
+            event.hook.sendMessage("This is not your ticket, are you sure you used the correct ID?").queue()
             return
         }
 
@@ -491,17 +534,16 @@ class TicketCommands(
             }
         }
 
-        if(failed) {
-            return
-        }
-
         (event.channel!! as MessageChannel).sendMessage(response).queue()
-        event.hook.sendMessage("Included users sent").queue()
+        if(!failed) event.hook.sendMessage("Included users sent").queue()
     }
 
     @Command("ticket opened count")
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
+    @ProperName("Ticket opened count")
+    @CommandDescription("Shows the number of currently open tickets")
+    @LongDescription("Shows the number of currently open tickets")
     fun ticketListOpenCommand(
         interaction: JDAInteraction
     ) {
@@ -520,11 +562,14 @@ class TicketCommands(
     }
 
     @Command("ticket close <id> <reason>")
+    @ProperName("Ticket close")
+    @CommandDescription("Closes the ticket")
+    @LongDescription("Closes the specified ticket. Tickets cannot be reopened so close wisely and carefully")
     fun ticketCloseCommand(
         interaction: JDAInteraction,
-        @Argument("id")
+        @Argument("id", description = "The id of the ticket to close")
         id: Int,
-        @Argument("reason")
+        @Argument("reason", description = "The reason the ticket was closed")
         @Greedy
         reason: String
     ) {

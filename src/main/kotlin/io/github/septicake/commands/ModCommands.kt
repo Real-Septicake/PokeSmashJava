@@ -5,10 +5,7 @@ package io.github.septicake.commands
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.messages.MessageCreate
 import io.github.septicake.PokeSmashBot
-import io.github.septicake.cloud.annotations.BlacklistSensitive
-import io.github.septicake.cloud.annotations.CommandParams
-import io.github.septicake.cloud.annotations.GuildOnly
-import io.github.septicake.cloud.annotations.UserPermissions
+import io.github.septicake.cloud.annotations.*
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.WhitelistEntity
 import io.github.septicake.db.WhitelistTable
@@ -24,6 +21,9 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
+import org.incendo.cloud.annotations.CommandDescription
+import org.incendo.cloud.annotations.Default
 
 class ModCommands(
     private val bot: PokeSmashBot,
@@ -32,9 +32,14 @@ class ModCommands(
     @UserPermissions(guildOwnerOnly = true)
     @Command("whitelist add <user>")
     @CommandParams("user")
+    @ProperName("Whitelist add")
+    @CommandDescription("Adds a user to the server's whitelist")
+    @LongDescription("Adds a user to this server's whitelist, allowing them to use several commands " +
+            "not available to most users")
+    @Category(CategoryEnum.MANAGEMENT)
     suspend fun whitelistAddCommand(
         interaction: JDAInteraction,
-        @Argument("user")
+        @Argument("user", description = "User to whitelist")
         user: User,
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -57,9 +62,13 @@ class ModCommands(
     @UserPermissions(guildOwnerOnly = true)
     @Command("whitelist remove <user>")
     @CommandParams("user")
+    @ProperName("Whitelist remove")
+    @CommandDescription("Removes a user from the server's whitelist")
+    @LongDescription("Removes a user from this server's whitelist, preventing them from using some commands")
+    @Category(CategoryEnum.MANAGEMENT)
     suspend fun whitelistRemoveCommand(
         interaction: JDAInteraction,
-        @Argument("user")
+        @Argument("user", description = "User to remove from whitelist")
         user: User,
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -80,14 +89,19 @@ class ModCommands(
     @UserPermissions(guildOwnerOnly = true)
     @Command("set channel <channel>")
     @CommandParams("channel")
+    @ProperName("Set channel")
+    @CommandDescription("Sets the channel for this server")
+    @LongDescription("Sets the channel that announcements are sent to, and where channel-locked commands " +
+            "can be used")
+    @Category(CategoryEnum.SETUP)
     suspend fun setChannel(
         interaction: JDAInteraction,
-        @Argument("channel", description = "Channel for `next` to be called in, and where announcements will be sent to")
+        @Argument("channel", description = "Channel for channel-locked commands, and where announcements will be sent to")
         channel: Channel
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().setEphemeral(true).await()
-        if (channel is MessageChannel) {
+        if (channel is GuildMessageChannel) {
             val info = transaction(bot.db) {
                 GuildEntity.findById(event.guild!!.idLong)
             }
@@ -108,14 +122,20 @@ class ModCommands(
 
     @GuildOnly
     @UserPermissions(guildOwnerOnly = true)
-    @Command("populate <channel> [polls]")
+    @Command("setup <channel> [polls]")
     @CommandParams("channel", "polls")
+    @ProperName("Setup")
+    @CommandDescription("Sets up the server info")
+    @LongDescription("Sets up the server info, setting the channel as well as the number of polls " +
+            "sent by calls to `/next`")
+    @Category(CategoryEnum.SETUP)
     suspend fun populateCommand(
         interaction: JDAInteraction,
         @Argument("channel", description = "Channel for `next` to be called in, and where announcements will be sent to")
         channel: Channel,
         @Argument("polls", description = "Number of polls per call of `next`, defaults to 5")
         @Range(min = "1", max = "10")
+        @Default("5")
         polls: Int = 5,
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -138,7 +158,7 @@ class ModCommands(
                     this.polls = polls
                 }
             }
-            event.hook.sendMessage("Server populated successfully.").await()
+            event.hook.sendMessage("Server populated successfully. you can now call `/next` in the specified channel").await()
         }
     }
 
@@ -147,9 +167,13 @@ class ModCommands(
     @UserPermissions(whitelistOnly = true)
     @Command("message <text>")
     @CommandParams("text")
+    @ProperName("Message")
+    @CommandDescription("Send a message to the bot")
+    @LongDescription("Send a message to the bot owner, abuse of this will result in a blacklist")
+    @Category(CategoryEnum.MANAGEMENT)
     suspend fun messageCommand(
         interaction: JDAInteraction,
-        @Argument("text")
+        @Argument("text", description = "Message to send")
         @Greedy
         text: String,
     ) {
