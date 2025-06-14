@@ -26,7 +26,9 @@ class BlacklistSensitivePostprocessor<C>(
                     "You have been blacklisted and cannot use this command.\n"
                             + "Reason: `${user.reason}`"
                 ).setEphemeral(true).complete()
-                logger.warn { "Blacklisted user \"${interaction.user.name}\" attempted to use \"${interaction.fullCommandName}\"" }
+                logger.warn { "Blacklisted user \"${interaction.user.idLong}\" attempted to use \"${
+                    commandMeta.getOrDefault(PokeMeta.PROPER_NAME, "[No Name]")
+                }\"" }
                 ConsumerService.interrupt()
             }
         }

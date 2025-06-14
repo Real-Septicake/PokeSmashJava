@@ -8,7 +8,6 @@ import org.incendo.cloud.services.type.ConsumerService
 
 class PokeCommandPreprocessor : CommandPreprocessor<JDAInteraction> {
     override fun accept(context: CommandPreprocessingContext<JDAInteraction>) {
-
         val interaction = context.commandContext().sender().interactionEvent()
 
         if(interaction == null) {

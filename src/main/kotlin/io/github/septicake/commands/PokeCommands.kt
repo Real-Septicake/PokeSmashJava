@@ -92,7 +92,7 @@ class PokeCommands(
             if (count != 0) {
                 PokeApi.listPokemonPaged(info.offset, count).results.forEach { pokemon ->
                     (event.channel as MessageChannel).sendMessage("").setPoll(
-                        MessagePollData.builder(pokemon.name.replaceFirstChar { it.titlecase() })
+                        MessagePollData.builder(pokemon.fetchInfo().id.toString() + ": " +pokemon.name.replaceFirstChar { it.titlecase() })
                             .addAnswer("Smash")
                             .addAnswer("Pass")
                             .build()

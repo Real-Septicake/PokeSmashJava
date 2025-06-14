@@ -60,7 +60,8 @@ class PollCheck : Job {
 
                             bot.setPollResults(
                                 guild.idLong,
-                                bot.pokemonMap.inverse()[poll.question.text.lowercase()]!!,
+                                poll.question.text.takeWhile { it.isDigit() }.ifEmpty { null }?.toInt()
+                                    ?: bot.pokemonMap.inverse()[poll.question.text.lowercase()]!!,
                                 poll.answers[0].votes.toLong(),
                                 poll.answers[1].votes.toLong()
                             )

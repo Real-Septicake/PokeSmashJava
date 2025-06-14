@@ -1,6 +1,5 @@
 package io.github.septicake
 
-import ca.solostudios.guava.kotlin.reflect.asTypeToken
 import com.google.common.collect.BiMap
 import com.google.common.collect.HashBiMap
 import com.zaxxer.hikari.HikariConfig
@@ -16,14 +15,13 @@ import io.github.septicake.cloud.preprocess.LengthMaxComponentPreprocessor
 import io.github.septicake.cloud.preprocess.PokeCommandPreprocessor
 import io.github.septicake.db.*
 import io.github.septicake.jobs.PollCheck
+import io.github.septicake.jobs.UsageClear
 import io.github.septicake.listeners.MessageListener
-import io.github.septicake.pokeapi.PokemonInfo
 import io.github.septicake.util.ScheduledThreadPool
 import io.github.septicake.util.currentThread
 import io.github.septicake.util.getEnv
 import io.github.septicake.util.processors
 import io.github.septicake.util.runtime
-import io.leangen.geantyref.TypeToken
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.Guild
 import org.incendo.cloud.annotations.AnnotationParser
@@ -54,7 +52,6 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.datetime.Clock
 import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
-import org.incendo.cloud.parser.standard.LongParser
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
@@ -90,6 +87,9 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
         registerCommandPostProcessor(GuildOnlyPostprocessor<JDAInteraction>())
         registerCommandPostProcessor(PrivateOnlyPostprocessor<JDAInteraction>())
         registerCommandPostProcessor(CommandsEnabledPostprocessor<JDAInteraction>(this@PokeSmashBot))
+
+        // Must remain last
+        registerCommandPostProcessor(LoggingPostprocessor<JDAInteraction>(this@PokeSmashBot))
 
         parserRegistry().registerParser(parserDescriptor(PokemonInfoParser(this@PokeSmashBot)))
         parserRegistry().registerParser(parserDescriptor(SpeciesInfoParser(this@PokeSmashBot)))
@@ -178,6 +178,7 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
                 // General Tables
                 GuildTable,
                 PokemonTable,
+                UsageTable,
                 // Poll Tables
                 PollEndTable,
                 PollTable,
@@ -201,11 +202,11 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
 
         logger.info { "Bot successfully started with user ${jda.selfUser.name}" }
 
-        val job = JobBuilder.newJob(PollCheck::class.java)
+        val pollJob = JobBuilder.newJob(PollCheck::class.java)
             .withIdentity(PokeSmashConstants.PollCheckIdentity)
             .build()
 
-        val trigger = TriggerBuilder.newTrigger()
+        val pollTrigger = TriggerBuilder.newTrigger()
             .withIdentity("PollTrigger")
             .startNow()
             .withSchedule(
@@ -216,11 +217,27 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
             .forJob(PokeSmashConstants.PollCheckIdentity)
             .build()
 
+        val usageJob = JobBuilder.newJob(UsageClear::class.java)
+            .withIdentity(PokeSmashConstants.UsageClearIdentity)
+            .build()
+
+        val usageTrigger = TriggerBuilder.newTrigger()
+            .withIdentity("UsageTrigger")
+            .startNow()
+            .withSchedule(
+                CronScheduleBuilder
+                    .cronSchedule("0 0 0 * * ?")
+                    .withMisfireHandlingInstructionFireAndProceed()
+            )
+            .forJob(PokeSmashConstants.UsageClearIdentity)
+            .build()
+
         val sf = StdSchedulerFactory()
         scheduler = sf.getScheduler()
 
         scheduler.context["Bot"] = this
-        scheduler.scheduleJob(job, trigger)
+        scheduler.scheduleJob(pollJob, pollTrigger)
+        scheduler.scheduleJob(usageJob, usageTrigger)
 
         scheduler.start()
     }

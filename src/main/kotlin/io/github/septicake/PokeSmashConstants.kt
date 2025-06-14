@@ -8,4 +8,5 @@ object PokeSmashConstants {
     val whitelist = getEnv("BOT_WHITELIST")!!.split(";").map { s -> s.toLong() }
 
     val PollCheckIdentity = "PollCheck"
+    val UsageClearIdentity = "UsageClear"
 }

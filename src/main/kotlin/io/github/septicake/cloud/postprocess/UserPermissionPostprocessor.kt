@@ -59,11 +59,12 @@ class UserPermissionPostprocessor<C>(
             }.orEmpty()
 
             val userId = interaction.user.idLong
-            val username = interaction.user.name
             val guildId = interaction.guild?.id
             val guildName = interaction.guild?.name ?: "DMs"
 
-            "User \"$userId\" ($username) in $guildName ${if(guildId != null) "($guildId) " else ""}attempted to use command \"${interaction.fullCommandName}\" $commandParameters"
+            "User $userId in $guildName ${if(guildId != null) "($guildId) " else ""}attempted to use command \"${
+                meta.getOrDefault(PokeMeta.PROPER_NAME, "[No Name]")
+            }\" $commandParameters"
         }
     }
 }
