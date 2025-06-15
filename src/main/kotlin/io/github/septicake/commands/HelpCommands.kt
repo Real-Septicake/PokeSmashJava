@@ -51,8 +51,7 @@ class HelpCommands(
                     "similar purpose. These groupings are slightly arbitrary, but aren't " +
                     "entirely so. You can check out the commands present in a category by " +
                     "using `/help category` with the name of the category as it appears in " +
-                    "the output of the command.\n- Do note: the `category` argument is case-" +
-                    "sensitive"
+                    "the output of the command"
             )
         )
         addTopic(
@@ -62,7 +61,7 @@ class HelpCommands(
             "Topics are bits of information that may not be immediately obvious " +
                     "that I felt the need to elaborate on. This information is not perfect, " +
                     "although I did my best to explain the topic as plainly as possible to avoid " +
-                    "extreme confusion.\n- Do note, the `topic` argument is case-sensitive"
+                    "extreme confusion"
         ))
         addFilter { _, _, view -> view.botOwner }
         addFilter { user, guild, view ->
@@ -101,19 +100,21 @@ class HelpCommands(
     @LongDescription("Prints the commands that belong to the specified category, along with their descriptions")
     fun helpCategoryCommand(
         interaction: JDAInteraction,
-        @Argument("category", description = "The category to fetch the commands of. Case sensitive")
+        @Argument("category", description = "The category to fetch the commands of")
         category: String
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
         val commands = helper.allCommands(event.user.idLong, event.guild)
-            .filter { it.category == category }
+            .filter { it.category.equals(category, true) }
         if(commands.isEmpty()) {
             event.hook.sendMessage("There is no category matching `$category`. Please make sure it is the same as it " +
                     "appears in `/help index`").queue()
             return
         }
-        val response = commands.fold("Commands under **$category**: (queried with `/help command`)") { acc, view ->
+        val response = commands.fold("Commands under **${
+            category.lowercase().replaceFirstChar { it.titlecase() }
+        }**: (queried with `/help command`)") { acc, view ->
             "$acc\n- __" + view.properName + "__: " + view.description
         }
         event.hook.sendMessage(response).queue()
@@ -126,20 +127,20 @@ class HelpCommands(
             "it is about")
     fun helpTopicCommand(
         interaction: JDAInteraction,
-        @Argument("topic", description = "The topic to show the full description of. Case sensitive")
+        @Argument("topic", description = "The topic to show the full description of")
         @Greedy
         topic: String
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
-        val view = helper.topics[topic]
+        val view = helper.topics[topic.lowercase()]
         if(view == null) {
             event.hook.sendMessage("There is no topic matching `$topic`. Please make sure it is the same as it appears " +
                     "in `/help index`").queue()
             return
         }
         event.hook.sendMessage(
-            "## Topic: $topic\n${view.longDescription}"
+            "## Topic: ${view.name}\n${view.longDescription}"
         ).queue()
     }
 
@@ -149,21 +150,21 @@ class HelpCommands(
     @LongDescription("Shows information about a command")
     fun helpCommandCommand(
         interaction: JDAInteraction,
-        @Argument("command", description = "The command to check the information of. Case sensitive")
+        @Argument("command", description = "The command to check the information of")
         @Greedy
         command: String
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().queue()
         val view = helper.allCommands(event.user.idLong, event.guild)
-            .find { it.properName == command }
+            .find { it.properName.equals(command, true) }
         if(view == null) {
             event.hook.sendMessage("There is no command matching `$command`. Please make sure it is the same as it " +
                     "appears in `/help category`").queue()
             return
         }
         event.hook.sendMessage(
-            "## Command: $command\n${view.longDescription}\nFormat: `/${view.command}`" + view.components
+            "## Command: ${view.properName}\n${view.longDescription}\nFormat: `/${view.command}`" + view.components
                 .fold("") { acc, comp ->
                 if(comp.type() == CommandComponent.ComponentType.LITERAL)
                     return@fold acc

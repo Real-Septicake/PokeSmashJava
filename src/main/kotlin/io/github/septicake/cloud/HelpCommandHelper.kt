@@ -12,7 +12,7 @@ import org.incendo.cloud.discord.jda5.JDA5CommandManager
 import org.incendo.cloud.discord.jda5.JDAInteraction
 
 class HelpCommandHelper(
-    private val bot: PokeSmashBot
+    bot: PokeSmashBot
 ) {
     private val manager: JDA5CommandManager<JDAInteraction> = bot.commandManager
 
@@ -60,7 +60,7 @@ class HelpCommandHelper(
     }
 
     fun addTopic(topic: Topic) {
-        topics += topic.name to topic
+        topics += topic.name.lowercase() to topic
     }
 
     fun addFilter(filter: HelpCommandHelper.(Long, guild: Guild?, CommandView) -> Boolean) {
