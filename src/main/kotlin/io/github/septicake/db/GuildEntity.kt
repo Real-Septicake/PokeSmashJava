@@ -7,7 +7,7 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 
 object GuildTable : LongIdTable("serverinfo", columnName = "guildId") {
     val name = text("name")
-    val polls = integer("pollCount").default(0)
+    val polls = integer("pollCount").default(5)
     val offset = integer("`offset`").default(0)
     val smashes = long("smash").default(0)
     val passes = long("pass").default(0)

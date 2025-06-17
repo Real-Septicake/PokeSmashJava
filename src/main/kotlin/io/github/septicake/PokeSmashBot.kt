@@ -439,13 +439,15 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
         return true
     }
 
-    fun messageTicketIncludes(id: Int, accept: (Long, PrivateChannel) -> Unit, error: (Long, Throwable) -> Unit) {
+    fun messageTicketIncludes(id: Int, accept: (Long, Boolean, PrivateChannel) -> Unit, error: (Long, Throwable) -> Unit) {
         transaction(db) {
             val ticket = TicketEntity.findById(id) ?: return@transaction
-            openDMWithID(ticket.author, accept, error)
+            openDMWithID(ticket.author, { user, channel -> accept(user, false, channel) }, error)
 
             TicketIncludeTable.selectAll().where { TicketIncludeTable.ticket eq ticket.id.value }.forEach {
-                openDMWithID(it[TicketIncludeTable.user], accept, error)
+                openDMWithID(it[TicketIncludeTable.user], { user, channel ->
+                        accept(user, it[TicketIncludeTable.muted], channel)
+                    }, error)
             }
         }
     }

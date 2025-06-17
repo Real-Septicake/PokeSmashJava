@@ -49,9 +49,11 @@ class TicketCommands(
     @BlacklistSensitive
     @ProperName("Ticket open")
     @CommandDescription("Opens a ticket")
-    @LongDescription("Opens a ticket, allowing for back and forth communication about a topic. " +
-            "You can only have a limited amount open at a time, so if you need to open a new one, try to get an older " +
-            "ticket closed first")
+    @LongDescription(
+        "Opens a ticket, allowing for back and forth communication about a topic. " +
+                "You can only have a limited amount open at a time, so if you need to open a new one, try to get an older " +
+                "ticket closed first"
+    )
     suspend fun ticketOpenCommand(
         interaction: JDAInteraction,
         @Argument("topic", description = "A short blurb about the reason behind the ticket. Limited to 75 characters")
@@ -76,17 +78,19 @@ class TicketCommands(
             Pair("Opened By", event.user.effectiveName),
             Pair("ID", event.user.id),
             image = event.user.avatarUrl,
-            timestamp = ticket.lastActive,
+            timestamp = transaction(bot.db) { ticket.lastActive },
             color = 0x15C132,
+            muted = false
         )
 
         // author is guaranteed to be the only person included, no need to use `messageTicketIncludes`
         event.hook.ticketEmbed(
             id,
-            "Thread $id Opened",
+            "Ticket $id Opened",
             topic,
-            timestamp = ticket.lastActive,
+            timestamp = transaction(bot.db) { ticket.lastActive },
             color = 0x15C132,
+            muted = false
         )
     }
 
@@ -117,8 +121,10 @@ class TicketCommands(
     @PrivateOnly
     @ProperName("Ticket info")
     @CommandDescription("Lists info about the ticket")
-    @LongDescription("Lists information about the ticket, including the author, topic, and when the last " +
-            "activity was")
+    @LongDescription(
+        "Lists information about the ticket, including the author, topic, and when the last " +
+                "activity was"
+    )
     suspend fun ticketInfoCommand(
         interaction: JDAInteraction,
         @Argument("id", description = "The id of the ticket to list information about")
@@ -137,7 +143,11 @@ class TicketCommands(
             return
         }
 
-        if (!bot.includedInTicket(ticket.id.value, event.user.idLong) && PokeSmashConstants.ownerId != event.user.idLong) {
+        if (!bot.includedInTicket(
+                ticket.id.value,
+                event.user.idLong
+            ) && PokeSmashConstants.ownerId != event.user.idLong
+        ) {
             event.hook.sendMessage("This is not your ticket").queue()
             logger.warn { "User ${event.user.effectiveName} tried to check ticket ${ticket.id.value} info" }
             return
@@ -158,13 +168,63 @@ class TicketCommands(
         }
     }
 
+    @Command("ticket mute <id> <status>")
+    @PrivateOnly
+    @ProperName("Ticket mute")
+    @CommandDescription("Sets whether you will be notified about updates to the ticket")
+    @LongDescription(
+        "Sets whether or not you will receive notifications about this ticket. " +
+                "This does not change whether the messages are sent, just if they are sent silently. " +
+                "You cannot mute a ticket if you are the author of the ticket"
+    )
+    fun ticketMuteCommand(
+        interaction: JDAInteraction,
+        @Argument("id", description = "The id of the ticket to mute")
+        id: Int,
+        @Argument("status", description = "Whether you want the ticket to be muted")
+        status: Boolean
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+
+        if (!bot.includedInTicket(id, event.user.idLong)) {
+            event.hook.sendMessage("This is not your ticket").queue()
+            return
+        }
+
+        val (ticket, thread) = bot.getTicket(id)
+        if (ticket == null || thread == null) {
+            event.hook.sendMessage(
+                "Could not mute ticket, " +
+                        "please double check the DM history to make sure this is the correct ID " +
+                        "and that the ticket is still open"
+            ).queue()
+            return
+        }
+
+        if(ticket.author == event.user.idLong) {
+            event.hook.sendMessage("You are the author of this thread, you cannot mute it").queue()
+            return
+        }
+
+        transaction(bot.db) {
+            TicketIncludeEntity.find {
+                TicketIncludeTable.ticket eq id and (TicketIncludeTable.user eq event.user.idLong)
+            }.singleOrNull()?.apply { this.muted = status }
+        }
+
+        event.hook.sendMessage("Ticket ${if(status) "muted" else "unmuted"}").queue()
+    }
+
     @Command("ticket include <id> <user>")
     @PrivateOnly
     @BlacklistSensitive
     @ProperName("Ticket include")
     @CommandDescription("Includes a user in the ticket")
-    @LongDescription("Includes a user in the ticket, allowing them to be notified of messages in the ticket " +
-            "and giving them permission to send messages as well. The user will be alerted that they were included")
+    @LongDescription(
+        "Includes a user in the ticket, allowing them to be notified of messages in the ticket " +
+                "and giving them permission to send messages as well. The user will be alerted that they were included"
+    )
     fun ticketIncludeCommand(
         interaction: JDAInteraction,
         @Argument("id", description = "The id of the ticket to include the user in")
@@ -207,20 +267,25 @@ class TicketCommands(
 
             transaction(bot.db) {
                 ticket.lastActive = now // only update if user exists
+                TicketIncludeEntity.new {
+                    this.user = user
+                    this.ticket = id
+                }
             }
 
             it.ticketEmbed(
                 ticket.id.value, "Included in " + ticket.topic,
                 "You've been included in ticket ${ticket.id.value} by $name.",
-                Pair("To Leave", "`/ticket leave ${ticket.id.value}`"), timestamp = now
+                Pair("To Leave", "`/ticket leave ${ticket.id.value}`"), timestamp = now,
+                muted = false // user can't have muted it yet
             )
 
-            bot.messageTicketIncludes(ticket.id.value, { userId, channel ->
+            bot.messageTicketIncludes(ticket.id.value, { userId, muted, channel ->
                 if (userId == user) return@messageTicketIncludes
                 channel.ticketEmbed(
                     ticket.id.value, "New included user in " + ticket.topic,
                     "User $username has been included in the ticket by $name",
-                    timestamp = now
+                    timestamp = now, muted = muted
                 )
             }, { user, _ -> logNonexistentUser(user, ticket.id.value) })
 
@@ -228,7 +293,7 @@ class TicketCommands(
                 ticket.id.value, "User included in ticket",
                 "User $username has been included in this ticket by ${event.user.effectiveName}",
                 Pair("New User ID", user.toString()),
-                timestamp = now
+                timestamp = now, muted = false
             )
 
             event.hook.sendMessage("User included").queue()
@@ -239,14 +304,16 @@ class TicketCommands(
     @PrivateOnly
     @ProperName("Ticket leave")
     @CommandDescription("Leaves the ticket, optionally silently")
-    @LongDescription("Leaves the specified ticket, you will no longer be notified of messages sent, nor will" +
-            " you be allowed to send messages in the ticket until included back. If `silent` is set to true, " +
-            "the other included users will not be notified of you leaving the ticket.")
+    @LongDescription(
+        "Leaves the specified ticket, you will no longer be notified of messages sent, nor will" +
+                " you be allowed to send messages in the ticket until included back. If `silent` is set to true, " +
+                "the other included users will not be notified of you leaving the ticket."
+    )
     fun ticketLeaveCommand(
         interaction: JDAInteraction,
         @Argument("id", description = "The id of the ticket to leave from")
         id: Int,
-        @Argument("silent", description = "If you leaving should not be announced")
+        @Argument("silent", description = "If you leaving should not be announced, defaults to `true`")
         @Default("true")
         silent: Boolean = true
     ) {
@@ -280,7 +347,8 @@ class TicketCommands(
 
         thread.ticketEmbed(
             ticket.id.value, "User left ticket", "User ${event.user.effectiveName} has left the ticket",
-            Pair("Silent", if (silent) "Yes" else "No"), timestamp = now
+            Pair("Silent", if (silent) "Yes" else "No"), image = event.user.avatarUrl, timestamp = now,
+            muted = false
         )
 
         transaction(bot.db) {
@@ -289,11 +357,11 @@ class TicketCommands(
         }
 
         if (!silent) {
-            bot.messageTicketIncludes(ticket.id.value, { _, channel ->
+            bot.messageTicketIncludes(ticket.id.value, { _, muted, channel ->
                 channel.ticketEmbed(
-                    ticket.id.value, "User left ticket",
+                    transaction(bot.db){ ticket.id.value }, "User left ticket",
                     "User ${event.user.effectiveName} has left the ticket",
-                    timestamp = now
+                    timestamp = now, muted = muted
                 )
             }, { user, _ -> logNonexistentUser(user, ticket.id.value) })
         }
@@ -301,10 +369,12 @@ class TicketCommands(
         bot.openDM(event.user.idLong, {
             it.ticketEmbed(
                 ticket.id.value, "You have left the ticket",
-                "You left ticket ${ticket.id.value}${if (silent) " silently" else ""}",
-                timestamp = now
+                "You left ticket ${transaction(bot.db) { ticket.id.value }}${if (silent) " silently" else ""}",
+                timestamp = now, muted = false
             )
         }, {})
+
+        event.hook.sendMessage("You have left the ticket").queue()
     }
 
     @Command("ticket uninclude <id> <user>")
@@ -312,9 +382,11 @@ class TicketCommands(
     @BlacklistSensitive
     @ProperName("Ticket uninclude")
     @CommandDescription("Unincludes a user from the ticket")
-    @LongDescription("Unincludes the user from the ticket, they will no longer receive messages about the " +
-            "ticket, nor will they be allowed to message the ticket until included back. The user will be alerted" +
-            " that they were unincluded from the ticket")
+    @LongDescription(
+        "Unincludes the user from the ticket, they will no longer receive messages about the " +
+                "ticket, nor will they be allowed to message the ticket until included back. The user will be alerted" +
+                " that they were unincluded from the ticket"
+    )
     fun ticketUnincludeCommand(
         interaction: JDAInteraction,
         @Argument("id", description = "The id of the ticket to uninclude the user from")
@@ -363,15 +435,16 @@ class TicketCommands(
         bot.openDM(user, {
             it.ticketEmbed(
                 ticket.id.value, "Unincluded from ticket",
-                "You have been unincluded from the ticket", timestamp = now
+                "You have been unincluded from the ticket", timestamp = now,
+                muted = false
             )
         }, {})
 
-        bot.messageTicketIncludes(ticket.id.value, { userId, channel ->
+        bot.messageTicketIncludes(ticket.id.value, { userId, muted, channel ->
             channel.ticketEmbed(
                 ticket.id.value, "User unincluded from ticket",
                 "User $username has been unincluded from this ticket by ${if (userId != event.user.idLong) name else "you"}",
-                timestamp = now
+                timestamp = now, muted = muted
             )
         }, { userId, _ -> logNonexistentUser(userId, ticket.id.value) })
 
@@ -379,7 +452,7 @@ class TicketCommands(
             ticket.id.value, "User unincluded from ticket",
             "User $username has been unincluded from this ticket by ${event.user.effectiveName}",
             Pair("Unincluded User ID", user.toString()),
-            timestamp = now
+            timestamp = now, muted = false
         )
 
         event.hook.sendMessage("User unincluded").queue()
@@ -426,15 +499,16 @@ class TicketCommands(
             id, ticket.topic, message,
             Pair("Message from", event.user.effectiveName),
             Pair("ID", event.user.id),
-            timestamp = now, image = event.user.avatarUrl
+            timestamp = now, image = event.user.avatarUrl,
+            muted = false
         )
 
-        bot.messageTicketIncludes(ticket.id.value, { user, channel ->
+        bot.messageTicketIncludes(ticket.id.value, { user, muted, channel ->
             channel.ticketEmbed(
                 ticket.id.value, ticket.topic + " Messaged", message,
                 Pair("From", if (user == event.user.idLong) "You" else event.user.effectiveName),
                 if (user == ticket.author) Pair("ID", event.user.id) else EMPTY,
-                timestamp = now, image = event.user.avatarUrl
+                timestamp = now, image = event.user.avatarUrl, muted = muted
             )
         }, { user, _ -> logNonexistentUser(user, ticket.id.value) })
 
@@ -445,8 +519,10 @@ class TicketCommands(
     @UserPermissions(botOwnerOnly = true)
     @ProperName("Ticket reply")
     @CommandDescription("Reply to the ticket")
-    @LongDescription("Sends a message to the ticket corresponding to the thread this command is used it, " +
-            "included also receive the message")
+    @LongDescription(
+        "Sends a message to the ticket corresponding to the thread this command is used it, " +
+                "included also receive the message"
+    )
     fun ticketReplyCommand(
         interaction: JDAInteraction,
         @Argument("message", description = "The message to reply with")
@@ -476,15 +552,16 @@ class TicketCommands(
             ticket.lastActive = now
         }
 
-        event.hook.ticketEmbed(ticket.id.value, null, message, timestamp = now)
+        event.hook.ticketEmbed(ticket.id.value, null, message, timestamp = now, muted = false)
 
-        bot.messageTicketIncludes(ticket.id.value, { _, channel ->
+        bot.messageTicketIncludes(ticket.id.value, { _, muted, channel ->
             channel.ticketEmbed(
                 ticket.id.value,
                 "Reply to " + ticket.topic,
                 message,
                 timestamp = now,
-                image = bot.jda.selfUser.avatarUrl
+                image = bot.jda.selfUser.avatarUrl,
+                muted = muted
             )
         }, { user, _ -> logNonexistentUser(user, ticket.id.value) })
     }
@@ -501,7 +578,7 @@ class TicketCommands(
         val event = interaction.interactionEvent() ?: return
         event.deferReply().setEphemeral(true).queue()
 
-        if(event.user.idLong != PokeSmashConstants.ownerId && event.channelType != ChannelType.PRIVATE) {
+        if (event.user.idLong != PokeSmashConstants.ownerId && event.channelType != ChannelType.PRIVATE) {
             event.hook.sendMessage("Command must be used in a Private Channel (DM) with the bot.").queue()
             return
         }
@@ -515,27 +592,30 @@ class TicketCommands(
         var failed = false
 
         transaction(bot.db) {
-            val included = mutableListOf<Long>()
+            val included = mutableListOf<Pair<Long, Boolean>>()
             val ticket = TicketEntity.findById(id)
-            if(ticket == null) {
+            if (ticket == null) {
                 event.hook.sendMessage("Ticket does not exist").queue()
                 failed = true
                 return@transaction
             }
-            included += ticket.author
+            included += Pair(ticket.author, false)
             TicketIncludeEntity.find { TicketIncludeTable.ticket eq id }
                 .forEach {
-                    included += it.user
+                    included += Pair(it.user, it.muted)
                 }
 
             response = included.fold("Users included in ticket $id:") { acc, l ->
-                val username = bot.username(l) { logNonexistentUser(l, ticket.id.value) }
-                "$acc\n$username${if (event.user.idLong == l) " [You]" else ""}"
+                val username = bot.username(l.first) { logNonexistentUser(l.first, ticket.id.value) }
+                "$acc\n$username${if (event.user.idLong == l.first) " [You]" else ""}" +
+                        if (event.user.idLong == PokeSmashConstants.ownerId)
+                            if (l.second) " **Muted**" else ""
+                        else ""
             }
         }
 
         (event.channel!! as MessageChannel).sendMessage(response).queue()
-        if(!failed) event.hook.sendMessage("Included users sent").queue()
+        if (!failed) event.hook.sendMessage("Included users sent").queue()
     }
 
     @Command("ticket opened count")
@@ -556,8 +636,8 @@ class TicketCommands(
 
         event.hook.sendMessage(
             "There " +
-                    "${if(count != 1L) "are" else "is"} " +
-                    "$count currently open ticket${if(count != 1L) "s" else ""}"
+                    "${if (count != 1L) "are" else "is"} " +
+                    "$count currently open ticket${if (count != 1L) "s" else ""}"
         ).queue()
     }
 
@@ -610,17 +690,19 @@ class TicketCommands(
             "Ticket closed by ${name ?: event.user.effectiveName} for `$reason`",
             color = 0xE53714,
             image = image,
-            timestamp = now
+            timestamp = now,
+            muted = false
         )
 
-        bot.messageTicketIncludes(ticket.id.value, { user, channel ->
+        bot.messageTicketIncludes(ticket.id.value, { user, muted, channel ->
             channel.ticketEmbed(
                 ticket.id.value,
                 ticket.topic + " Closed",
                 "Ticket closed by ${name ?: if (user == event.user.idLong) "you" else event.user.effectiveName} for `$reason`",
                 color = 0xE53714,
                 image = image,
-                timestamp = now
+                timestamp = now,
+                muted = muted
             )
         }, { user, _ -> logNonexistentUser(user, ticket.id.value) })
 

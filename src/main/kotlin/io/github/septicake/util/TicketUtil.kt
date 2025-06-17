@@ -1,6 +1,7 @@
 package io.github.septicake.util
 
 import dev.minn.jda.ktx.messages.MessageCreate
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
@@ -18,9 +19,10 @@ fun <T : MessageChannel> T.ticketEmbed(
     vararg fields: Pair<String, String>,
     image: String? = null,
     timestamp: Instant = Clock.System.now(),
-    color: Int? = null
+    color: Int? = null,
+    muted: Boolean
 ) =
-    this.sendMessage(MessageCreate {
+    this.sendMessage(MessageCreateBuilder.from(MessageCreate {
         embed {
             this.color = color
             this.title = title
@@ -34,7 +36,7 @@ fun <T : MessageChannel> T.ticketEmbed(
 
             footer { name = "Ticket ID: $id" }
         }
-    }).queue()
+    }).setSuppressedNotifications(muted).build()).queue()
 
 fun WebhookClient<Message>.ticketEmbed(
     id: Int,
@@ -43,9 +45,10 @@ fun WebhookClient<Message>.ticketEmbed(
     vararg fields: Pair<String, String>,
     image: String? = null,
     timestamp: Instant = Clock.System.now(),
-    color: Int? = null
+    color: Int? = null,
+    muted: Boolean
 ) =
-    this.sendMessage(MessageCreate {
+    this.sendMessage(MessageCreateBuilder.from(MessageCreate {
         embed {
             this.color = color
             this.title = title
@@ -59,4 +62,5 @@ fun WebhookClient<Message>.ticketEmbed(
 
             footer { name = "Ticket ID: $id" }
         }
-    }).queue()
+
+    }).setSuppressedNotifications(muted).build()).queue()

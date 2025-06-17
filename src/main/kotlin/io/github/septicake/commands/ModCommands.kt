@@ -11,7 +11,6 @@ import io.github.septicake.db.WhitelistEntity
 import io.github.septicake.db.WhitelistTable
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.Channel
-import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import org.incendo.cloud.annotation.specifier.Greedy
 import org.incendo.cloud.annotation.specifier.Range
 import org.incendo.cloud.annotations.Argument
@@ -21,7 +20,7 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
-import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
+import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel
 import org.incendo.cloud.annotations.CommandDescription
 import org.incendo.cloud.annotations.Default
 
@@ -101,7 +100,11 @@ class ModCommands(
     ) {
         val event = interaction.interactionEvent() ?: return
         event.deferReply().setEphemeral(true).await()
-        if (channel is GuildMessageChannel) {
+        if (channel is StandardGuildMessageChannel) {
+            if(!channel.isNSFW) {
+                event.hook.sendMessage("Channel must be marked as nsfw").queue()
+                return
+            }
             val info = transaction(bot.db) {
                 GuildEntity.findById(event.guild!!.idLong)
             }
@@ -147,8 +150,12 @@ class ModCommands(
         if (info != null) {
             event.hook.sendMessage("Server has already been populated").await()
         } else {
-            if (channel !is MessageChannel) {
+            if (channel !is StandardGuildMessageChannel) {
                 event.hook.sendMessage("Channel must be a message channel").await()
+                return
+            }
+            if(!channel.isNSFW) {
+                event.hook.sendMessage("Channel must be marked as nsfw").queue()
                 return
             }
             transaction(bot.db) {
@@ -192,7 +199,9 @@ class ModCommands(
                 field("Server ID", guild.id)
                 field() // also alignment
 
-                footer { name = "ID: ${interaction.user().id}"; iconUrl = event.user.avatarUrl }
+                thumbnail = event.user.avatarUrl
+
+                footer { name = "ID: ${event.user.id}" }
             }
         }).await()
         event.hook.sendMessage("Message sent").await()
