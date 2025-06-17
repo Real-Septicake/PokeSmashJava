@@ -1,5 +1,6 @@
 package io.github.septicake
 
+import dev.minn.jda.ktx.jdabuilder.cache
 import dev.minn.jda.ktx.jdabuilder.injectKTX
 import dev.minn.jda.ktx.jdabuilder.intents
 import io.github.septicake.util.getEnv
@@ -11,6 +12,7 @@ import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.requests.GatewayIntent
+import net.dv8tion.jda.api.utils.cache.CacheFlag
 import org.slf4j.kotlin.error
 import org.slf4j.kotlin.toplevel.getLogger
 
@@ -31,7 +33,7 @@ fun main() {
             setActivity(Activity.watching("these weirdos"))
             setGatewayEncoding(GatewayEncoding.ETF)
 
-            setEnableShutdownHook(true)
+            cache += CacheFlag.MEMBER_OVERRIDES
         }
         val bot = PokeSmashBot(jdaBuilder)
         runBlocking {

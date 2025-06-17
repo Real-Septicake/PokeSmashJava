@@ -27,6 +27,7 @@ import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.getLogger
 import org.slf4j.kotlin.info
+import java.util.EnumSet
 import kotlin.math.min
 
 class PokeCommands(
@@ -85,7 +86,19 @@ class PokeCommands(
                     Permission.MESSAGE_SEND_IN_THREADS
                 )
             ) {
-                event.hook.sendMessage("Insufficient permissions. Requires `Create Public Threads`, `Send Messages in Threads`, and, `Create Polls`").queue()
+                val wantedPerms = EnumSet.of(
+                    Permission.CREATE_PUBLIC_THREADS,
+                    Permission.MESSAGE_SEND_POLLS,
+                    Permission.MESSAGE_SEND_IN_THREADS
+                )
+                val perms = event.guild!!.selfMember.getPermissions(event.guildChannel)
+                wantedPerms.removeAll(perms)
+                event.hook.sendMessage("Insufficient permissions. Requires `Create Public Threads`, " +
+                        "`Send Messages in Threads`, and `Create Polls`\n" +
+                        wantedPerms.fold("Still need: ") { acc, permission ->
+                            "$acc `${permission.getName()}`"
+                        }
+                ).queue()
                 return
             }
             val count = min(bot.pokemonMap.size - info.offset, info.polls)
@@ -318,8 +331,6 @@ class PokeCommands(
                 color = species.color.colorFromName()
                 url = "https://pokemondb.net/pokedex/%04d".format(pokemon.id)
                 description = flavor.formatFlavorText()
-                // description = // TODO: Find some reasonable way to get a description
-                // could we use "https://img.pokemondb.net/artwork/large/${pokemon.name}.jpg" instead?
                 thumbnail = pokemon.sprites["front_default"]?.jsonPrimitive?.contentOrNull
 
                 timestamp = Clock.System.now().toJavaInstant()
