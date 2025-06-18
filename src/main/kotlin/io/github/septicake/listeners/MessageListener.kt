@@ -6,13 +6,10 @@ import kotlinx.datetime.toKotlinInstant
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.slf4j.kotlin.getLogger
 
 class MessageListener(
     val bot: PokeSmashBot
 ): ListenerAdapter() {
-    private val logger by getLogger()
-
     override fun onMessageReceived(event: MessageReceivedEvent) {
         if (event.isFromGuild) {
             if(bot.jda.selfUser.idLong != event.author.idLong) return
