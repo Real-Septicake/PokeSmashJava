@@ -181,6 +181,7 @@ class DevCommands(
         @Argument("user", description = "User to warn")
         user: Long,
         @Argument("reason", description = "Reason for warning")
+        @Greedy
         reason: String
     ) {
         val event = interaction.interactionEvent() ?: return
@@ -205,6 +206,7 @@ class DevCommands(
         @Argument("user", description = "User to blacklist")
         user: Long,
         @Argument("reason", description = "Reason for blacklist")
+        @Greedy
         @LengthMax(255)
         reason: String
     ) {

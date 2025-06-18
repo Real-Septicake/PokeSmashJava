@@ -50,6 +50,7 @@ import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.datetime.Clock
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
 import org.jetbrains.exposed.sql.*
@@ -84,8 +85,8 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
         registerCommandPostProcessor(BlacklistSensitivePostprocessor<JDAInteraction>(this@PokeSmashBot))
         registerCommandPostProcessor(ChannelRestrictionPostprocessor<JDAInteraction>(this@PokeSmashBot))
         registerCommandPostProcessor(UserPermissionPostprocessor<JDAInteraction>(this@PokeSmashBot))
-        registerCommandPostProcessor(GuildOnlyPostprocessor<JDAInteraction>())
-        registerCommandPostProcessor(PrivateOnlyPostprocessor<JDAInteraction>())
+        registerCommandPostProcessor(GuildOnlyPostprocessor<JDAInteraction>(this@PokeSmashBot))
+        registerCommandPostProcessor(PrivateOnlyPostprocessor<JDAInteraction>(this@PokeSmashBot))
         registerCommandPostProcessor(CommandsEnabledPostprocessor<JDAInteraction>(this@PokeSmashBot))
 
         // Must remain last
@@ -287,7 +288,7 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
             return true
         if (user in PokeSmashConstants.whitelist)
             return true
-        if (guild.ownerIdLong == user)
+        if (guild.getMemberById(user)?.hasPermission(Permission.ADMINISTRATOR) == true)
             return true
 
         return userServerWhitelisted(guild.idLong, user)

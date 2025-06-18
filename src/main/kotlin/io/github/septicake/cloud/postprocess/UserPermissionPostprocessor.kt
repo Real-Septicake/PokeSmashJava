@@ -3,6 +3,9 @@ package io.github.septicake.cloud.postprocess
 import io.github.septicake.PokeSmashBot
 import io.github.septicake.PokeSmashConstants
 import io.github.septicake.cloud.PokeMeta
+import io.github.septicake.db.FilterReason
+import io.github.septicake.db.UsageEntity
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
 import org.incendo.cloud.context.CommandContext
@@ -11,6 +14,7 @@ import org.incendo.cloud.execution.postprocessor.CommandPostprocessor
 import org.incendo.cloud.kotlin.extension.getOrNull
 import org.incendo.cloud.meta.CommandMeta
 import org.incendo.cloud.services.type.ConsumerService
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.debug
 import org.slf4j.kotlin.getLogger
 import org.slf4j.kotlin.warn
@@ -24,20 +28,24 @@ class UserPermissionPostprocessor<C>(
         val context = postprocessingContext.commandContext()
         val commandMeta = postprocessingContext.command().commandMeta()
         val interaction = context.get<GenericCommandInteractionEvent>("Interaction")
+        val usage = context.get<UsageEntity>("Usage")
 
         if(commandMeta.getOrDefault(PokeMeta.WHITELIST_ONLY, false)) {
             logger.debug { "whitelist only \"${interaction.fullCommandName}\"" }
             val guild = context.get<Guild>("Guild")
             if(!bot.userWhitelisted(guild, interaction.user.idLong)) {
-                interaction.reply("\\*racks shotgun* Do not the bot.").complete()
+                interaction.reply("\\*racks shotgun* Do not the bot.").setEphemeral(true).complete()
+                transaction(bot.db) { usage.result = FilterReason.NOT_WHITELISTED }
                 logFailedUse(commandMeta, context, interaction)
                 ConsumerService.interrupt()
             }
-        } else if(commandMeta.getOrDefault(PokeMeta.GUILD_OWNER_ONLY, false)) {
-            logger.debug { "guild owner only \"${interaction.fullCommandName}\"" }
+        } else if(commandMeta.getOrDefault(PokeMeta.ADMIN_ONLY, false)) {
+            logger.debug { "admin only \"${interaction.fullCommandName}\"" }
             val guild = context.get<Guild>("Guild")
-            if(interaction.user.idLong != guild.ownerIdLong && interaction.user.idLong != PokeSmashConstants.ownerId) {
-                interaction.reply("Command can only be used by server owner.").setEphemeral(true).complete()
+            val admin = guild.getMemberById(interaction.user.idLong)?.hasPermission(Permission.ADMINISTRATOR) ?: false
+            if(!admin && interaction.user.idLong != PokeSmashConstants.ownerId) {
+                interaction.reply("Command can only be used by admins.").setEphemeral(true).complete()
+                transaction(bot.db) { usage.result = FilterReason.NOT_ADMIN }
                 logFailedUse(commandMeta, context, interaction)
                 ConsumerService.interrupt()
             }
@@ -45,6 +53,7 @@ class UserPermissionPostprocessor<C>(
             logger.debug { "bot owner only \"${interaction.fullCommandName}\"" }
             if(PokeSmashConstants.ownerId != interaction.user.idLong) {
                 interaction.reply("Only the bot owner can use this command.").setEphemeral(true).complete()
+                transaction(bot.db) { usage.result = FilterReason.NOT_BOT_OWNER }
                 logFailedUse(commandMeta, context, interaction)
                 ConsumerService.interrupt()
             }

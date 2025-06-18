@@ -68,10 +68,9 @@ class HelpCommands(
             "ID",
             "An explanation of the type `ID` that appears as a parameter",
             "The `ID` type that appears as a parameter type for some commands accepts " +
-                    "one of two things depending on context; Either a user's ID or a server's. " +
-                    "To access these, you need to activate `Developer Mode` and right-click on " +
-                    "whatever you're trying to get the ID of.\n### For more specific information " +
-                    "on getting IDs, check out [this article]" +
+                    "a user's ID. To access it, you need to activate `Developer Mode` and " +
+                    "right-click on the user you're tying to get the ID of.\n### For more " +
+                    "specific information on getting IDs, check out [this article]" +
                     "(https://support-dev.discord.com/hc/en-us/articles/360028717192-Where-can-I-find-my-Application-Team-Server-ID)" +
                     " by Discord"
         ))
@@ -104,7 +103,7 @@ class HelpCommands(
             "$acc\n- **" + view.name + "**: " + view.shortDescription
         }
         if(event.user.idLong == event.guild?.ownerIdLong)
-            response = "For the bot to function, you must run `/help index` first. The channel chosen must be marked " +
+            response = "For the bot to function, you must run `/setup` first. The channel chosen must be marked " +
                     "as nsfw per Discord's ToS, as the bot does kinda fall under that umbrella. The number of polls " +
                     "sent defaults to 5. To allow other users access to `/next` and a few other commands I have " +
                     "planned, whitelist them using `/whitelist add`\n" + response

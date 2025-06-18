@@ -33,7 +33,7 @@ class HelpCommandHelper(
             meta.getOrDefault(PokeMeta.CATEGORY_NAME, "[No Category]"),
             meta.getOrDefault(PokeMeta.CATEGORY_DESCRIPTION, "[No Description]"),
             meta.getOrDefault(PokeMeta.BOT_OWNER_ONLY, false),
-            meta.getOrDefault(PokeMeta.GUILD_OWNER_ONLY, false),
+            meta.getOrDefault(PokeMeta.ADMIN_ONLY, false),
             meta.getOrDefault(PokeMeta.WHITELIST_ONLY, false)
         )
     }

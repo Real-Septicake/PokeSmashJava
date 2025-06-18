@@ -15,7 +15,7 @@ annotation class UserPermissions(
      */
     val botOwnerOnly: Boolean = false,
     /**
-     * The user must be the guild owner to use the command
+     * The user must be an admin to use the command
      */
-    val guildOwnerOnly: Boolean = false
+    val adminOnly: Boolean = false
 )

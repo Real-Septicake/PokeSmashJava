@@ -8,7 +8,7 @@ import org.incendo.cloud.kotlin.extension.cloudKey
 object PokeMeta {
     val WHITELIST_ONLY: CloudKey<Boolean> = cloudKey("whitelisted-only")
     val BOT_OWNER_ONLY: CloudKey<Boolean> = cloudKey("bot-owner-only")
-    val GUILD_OWNER_ONLY: CloudKey<Boolean> = cloudKey("guild-owner-only")
+    val ADMIN_ONLY: CloudKey<Boolean> = cloudKey("admin-only")
 
     val SERVER_CHANNEL_ONLY: CloudKey<Boolean> = cloudKey("server-channel-only")
     val DEV_CHANNEL_ONLY: CloudKey<Boolean> = cloudKey("dev-channel-only")
@@ -35,7 +35,7 @@ object PokeMeta {
     fun <T> userPermissionModifier(userPermissions: UserPermissions, builder: Builder<T>) : Builder<T> {
         return builder.meta(WHITELIST_ONLY, userPermissions.whitelistOnly)
             .meta(BOT_OWNER_ONLY, userPermissions.botOwnerOnly)
-            .meta(GUILD_OWNER_ONLY, userPermissions.guildOwnerOnly)
+            .meta(ADMIN_ONLY, userPermissions.adminOnly)
     }
 
     fun <T> channelRestrictionModifier(channelRestriction: ChannelRestriction, builder: Builder<T>): Builder<T> {

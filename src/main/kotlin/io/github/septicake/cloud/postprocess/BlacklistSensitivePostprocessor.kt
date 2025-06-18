@@ -2,10 +2,13 @@ package io.github.septicake.cloud.postprocess
 
 import io.github.septicake.PokeSmashBot
 import io.github.septicake.cloud.PokeMeta
+import io.github.septicake.db.FilterReason
+import io.github.septicake.db.UsageEntity
 import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
 import org.incendo.cloud.execution.postprocessor.CommandPostprocessingContext
 import org.incendo.cloud.execution.postprocessor.CommandPostprocessor
 import org.incendo.cloud.services.type.ConsumerService
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.getLogger
 import org.slf4j.kotlin.warn
 
@@ -18,6 +21,7 @@ class BlacklistSensitivePostprocessor<C>(
         val context = postprocessingContext.commandContext()
         val commandMeta = postprocessingContext.command().commandMeta()
         val interaction = context.get<GenericCommandInteractionEvent>("Interaction")
+        val usage = context.get<UsageEntity>("Usage")
 
         if(commandMeta.getOrDefault(PokeMeta::BLACKLIST_SENSITIVE, false)){
             val user = bot.userBlacklisted(interaction.user.idLong)
@@ -29,6 +33,7 @@ class BlacklistSensitivePostprocessor<C>(
                 logger.warn { "Blacklisted user \"${interaction.user.idLong}\" attempted to use \"${
                     commandMeta.getOrDefault(PokeMeta.PROPER_NAME, "[No Name]")
                 }\"" }
+                transaction(bot.db) { usage.result = FilterReason.BLACKLISTED }
                 ConsumerService.interrupt()
             }
         }

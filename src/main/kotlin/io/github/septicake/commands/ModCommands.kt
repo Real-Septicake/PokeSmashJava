@@ -28,7 +28,7 @@ class ModCommands(
     private val bot: PokeSmashBot,
 ) {
     @GuildOnly
-    @UserPermissions(guildOwnerOnly = true)
+    @UserPermissions(adminOnly = true)
     @Command("whitelist add <user>")
     @CommandParams("user")
     @ProperName("Whitelist add")
@@ -58,7 +58,7 @@ class ModCommands(
     }
 
     @GuildOnly
-    @UserPermissions(guildOwnerOnly = true)
+    @UserPermissions(adminOnly = true)
     @Command("whitelist remove <user>")
     @CommandParams("user")
     @ProperName("Whitelist remove")
@@ -85,7 +85,7 @@ class ModCommands(
     }
 
     @GuildOnly
-    @UserPermissions(guildOwnerOnly = true)
+    @UserPermissions(adminOnly = true)
     @Command("set channel <channel>")
     @CommandParams("channel")
     @ProperName("Set channel")
@@ -124,7 +124,7 @@ class ModCommands(
     }
 
     @GuildOnly
-    @UserPermissions(guildOwnerOnly = true)
+    @UserPermissions(adminOnly = true)
     @Command("setup <channel> [polls]")
     @CommandParams("channel", "polls")
     @ProperName("Setup")

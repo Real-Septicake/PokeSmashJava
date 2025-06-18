@@ -20,7 +20,7 @@ class CountCommands(
     private val logger by getLogger()
 
     @GuildOnly
-    @UserPermissions(guildOwnerOnly = true)
+    @UserPermissions(adminOnly = true)
     @Command("set count <count>")
     @CommandParams("count")
     @ProperName("Set count")
