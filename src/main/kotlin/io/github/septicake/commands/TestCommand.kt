@@ -10,7 +10,9 @@ import io.github.septicake.cloud.annotations.ProperName
 import org.incendo.cloud.annotations.Command
 import org.incendo.cloud.annotations.CommandDescription
 import org.incendo.cloud.discord.jda5.JDAInteraction
+import org.incendo.cloud.discord.slash.annotation.CommandScope
 import org.slf4j.kotlin.getLogger
+import org.slf4j.kotlin.info
 
 @Category(CategoryEnum.TEST)
 class TestCommand(
@@ -28,5 +30,19 @@ class TestCommand(
         val event = interaction.interactionEvent() ?: return
 
         event.reply("why're you using this?").queue()
+    }
+
+    // does fuck all, and is limited to the one guild who asked for it
+    @Command("donate")
+    @ProperName("Donate")
+    @CommandDescription("Donate, I guess")
+    @LongDescription("Sure, why not I guess")
+    @CommandScope(guilds = [1050929736538402917])
+    fun donateCommand(
+        interaction: JDAInteraction
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.reply("No.").setEphemeral(true).queue()
+        logger.info { "User ${event.user.effectiveName} tried to donate" }
     }
 }

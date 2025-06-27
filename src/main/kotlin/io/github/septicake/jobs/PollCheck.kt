@@ -51,7 +51,11 @@ class PollCheck : Job {
                                 return@async
                             }
 
-                            val poll = channel.retrieveMessageById(entity.id.value).await().poll
+                            val poll = try {
+                                channel.retrieveMessageById(entity.id.value).await().poll
+                            } catch(_: Throwable) {
+                                return@async
+                            }
 
                             if (poll == null) {
                                 transaction(bot.db) { entity.delete() }

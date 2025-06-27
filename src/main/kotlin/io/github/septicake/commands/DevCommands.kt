@@ -52,8 +52,10 @@ class DevCommands(
     @UserPermissions(botOwnerOnly = true)
     @CommandDescription("Strips user of whitelist permissions")
     @ProperName("Strip whitelist")
-    @LongDescription("Strips a user of their whitelist privilege in all servers they are whitelisted in.\n" +
-            "This does not override the whitelist privileges given by guild owners.")
+    @LongDescription(
+        "Strips a user of their whitelist privilege in all servers they are whitelisted in.\n" +
+                "This does not override the whitelist privileges given by guild owners."
+    )
     fun whitelistStripCommand(
         interaction: JDAInteraction,
         @Argument("user", description = "User to strip from whitelist")
@@ -122,8 +124,10 @@ class DevCommands(
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("msg")
     @ProperName("Announce")
-    @LongDescription("Sends an announcement to all servers, the sequence `%owner` can be used to mention" +
-            " the server owner. Some further information is returned as a response to the original command invocation.")
+    @LongDescription(
+        "Sends an announcement to all servers, the sequence `%owner` can be used to mention" +
+                " the server owner. Some further information is returned as a response to the original command invocation."
+    )
     fun announceCommand(
         interaction: JDAInteraction,
         @Argument("msg", description = "Message to announce")
@@ -145,7 +149,7 @@ class DevCommands(
 
                 try {
                     if (format) {
-                        val guild = bot.jda.getGuildById(it[GuildTable.id].value)!!
+                        val guild = bot.jda.getGuildById(it[GuildTable.id].value) ?: return@forEach
                         val formattedStr = msg.replace("%owner%", "<@${guild.ownerId}>")
                         bot.jda.getTextChannelById(it[GuildTable.channel]!!)!!.sendMessage(formattedStr).queue()
                     } else
@@ -174,8 +178,10 @@ class DevCommands(
     @CommandParams("user", "reason")
     @ProperName("Warn")
     @CommandDescription("Warns a user for the specified reason")
-    @LongDescription("Sends a DM to the specified user warning them for the specified reason, no other " +
-            "actions are taken by this command")
+    @LongDescription(
+        "Sends a DM to the specified user warning them for the specified reason, no other " +
+                "actions are taken by this command"
+    )
     fun warnCommand(
         interaction: JDAInteraction,
         @Argument("user", description = "User to warn")
@@ -199,8 +205,10 @@ class DevCommands(
     @CommandParams("user", "reason")
     @CommandDescription("Adds a user to the blacklist")
     @ProperName("Blacklist add")
-    @LongDescription("Adds a user to the blacklist, preventing them from using certain commands. " +
-            "The user is alerted of the fact that they have been blacklisted")
+    @LongDescription(
+        "Adds a user to the blacklist, preventing them from using certain commands. " +
+                "The user is alerted of the fact that they have been blacklisted"
+    )
     fun blacklistAddCommand(
         interaction: JDAInteraction,
         @Argument("user", description = "User to blacklist")
@@ -237,8 +245,10 @@ class DevCommands(
     @CommandParams("user")
     @CommandDescription("Removes a user from the blacklist")
     @ProperName("Blacklist remove")
-    @LongDescription("Removes a user from the blacklist, allowing them to use \"blacklist sensitive\" " +
-            "commands again. The user is alerted that they were removed from the blacklist")
+    @LongDescription(
+        "Removes a user from the blacklist, allowing them to use \"blacklist sensitive\" " +
+                "commands again. The user is alerted that they were removed from the blacklist"
+    )
     fun blacklistRemoveCommand(
         interaction: JDAInteraction,
         @Argument("user", description = "User to remove from blacklist")
@@ -277,7 +287,7 @@ class DevCommands(
         event.deferReply().queue()
 
         val entity = bot.userBlacklisted(user)
-        if(entity == null) {
+        if (entity == null) {
             event.hook.sendMessage("User \"$user\" is not blacklisted").queue()
             return
         }
@@ -341,5 +351,30 @@ class DevCommands(
             }
         }
         bot.shutdown()
+    }
+
+    @Command("alert <msg>")
+    @ChannelRestriction(devChannel = true)
+    @UserPermissions(botOwnerOnly = true)
+    @CommandParams("msg")
+    @CommandDescription("Alert guild owners")
+    @ProperName("Alert")
+    @LongDescription("Send a message to the owners of all guilds the bot is in")
+    fun alertCommand(
+        interaction: JDAInteraction,
+        @Argument("msg", description = "The message to send to guild owners")
+        @Greedy
+        msg: String
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().queue()
+        var total = 0
+        bot.jda.selfUser.mutualGuilds.forEach { guild ->
+            bot.openDM(guild.ownerIdLong, {
+                it.sendMessage(msg).queue()
+                total++
+            }, {})
+        }
+        event.hook.sendMessage("Alert sent to $total guild owners").queue()
     }
 }

@@ -12,6 +12,8 @@ import net.dv8tion.jda.api.interactions.components.LayoutComponent
 import net.dv8tion.jda.api.utils.FileUpload
 import net.dv8tion.jda.api.utils.messages.MessageCreateData
 import kotlinx.datetime.Instant
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.Guild
 
 suspend inline fun <T> WebhookClient<T>.sendMessage(
     content: String = "",
@@ -34,3 +36,6 @@ suspend inline fun <T : MessageChannel> T.sendMessage(
 ): Message? = sendMessage(MessageCreate(content, embeds, files, components, tts, mentions, builder)).await()
 
 fun Instant.toDiscordTimestamp() : String = "<t:${this.epochSeconds}:F>"
+
+fun Guild?.isAdmin(user: Long): Boolean = this?.getMemberById(user)?.hasPermission(Permission.ADMINISTRATOR) == true
+        || this?.ownerIdLong == user

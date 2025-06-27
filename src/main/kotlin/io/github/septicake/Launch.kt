@@ -27,7 +27,9 @@ fun main() {
         val jdaBuilder = JDABuilder.createLight(token).apply {
             injectKTX()
 
-            intents += GatewayIntent.GUILD_MESSAGES // only useful for getting the bot's own poll messages
+            intents += listOf(
+                GatewayIntent.GUILD_MESSAGES // only useful for getting the bot's own poll messages
+            )
 
             setStatus(OnlineStatus.ONLINE)
             setActivity(Activity.watching("these weirdos"))

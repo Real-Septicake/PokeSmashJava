@@ -5,7 +5,7 @@ import io.github.septicake.PokeSmashConstants
 import io.github.septicake.cloud.PokeMeta
 import io.github.septicake.db.FilterReason
 import io.github.septicake.db.UsageEntity
-import net.dv8tion.jda.api.Permission
+import io.github.septicake.util.isAdmin
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.events.interaction.command.GenericCommandInteractionEvent
 import org.incendo.cloud.context.CommandContext
@@ -34,7 +34,7 @@ class UserPermissionPostprocessor<C>(
             logger.debug { "whitelist only \"${interaction.fullCommandName}\"" }
             val guild = context.get<Guild>("Guild")
             if(!bot.userWhitelisted(guild, interaction.user.idLong)) {
-                interaction.reply("\\*racks shotgun* Do not the bot.").setEphemeral(true).complete()
+                interaction.reply("This command can only be used by whitelisted users.").setEphemeral(true).complete()
                 transaction(bot.db) { usage.result = FilterReason.NOT_WHITELISTED }
                 logFailedUse(commandMeta, context, interaction)
                 ConsumerService.interrupt()
@@ -42,8 +42,7 @@ class UserPermissionPostprocessor<C>(
         } else if(commandMeta.getOrDefault(PokeMeta.ADMIN_ONLY, false)) {
             logger.debug { "admin only \"${interaction.fullCommandName}\"" }
             val guild = context.get<Guild>("Guild")
-            val admin = guild.getMemberById(interaction.user.idLong)?.hasPermission(Permission.ADMINISTRATOR) ?: false
-            if(!admin && interaction.user.idLong != PokeSmashConstants.ownerId) {
+            if(!guild.isAdmin(interaction.user.idLong)) {
                 interaction.reply("Command can only be used by admins.").setEphemeral(true).complete()
                 transaction(bot.db) { usage.result = FilterReason.NOT_ADMIN }
                 logFailedUse(commandMeta, context, interaction)

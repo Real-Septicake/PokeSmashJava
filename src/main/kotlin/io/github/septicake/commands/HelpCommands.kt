@@ -8,6 +8,7 @@ import io.github.septicake.cloud.annotations.Category
 import io.github.septicake.cloud.annotations.CategoryEnum
 import io.github.septicake.cloud.annotations.LongDescription
 import io.github.septicake.cloud.annotations.ProperName
+import io.github.septicake.util.isAdmin
 import org.incendo.cloud.annotation.specifier.Greedy
 import org.incendo.cloud.annotations.Argument
 import org.incendo.cloud.annotations.Command
@@ -75,8 +76,9 @@ class HelpCommands(
                     " by Discord"
         ))
         addFilter { _, _, view -> view.botOwner }
+        addFilter { _, _, view -> view.hidden }
         addFilter { user, guild, view ->
-            !(!view.guildOwner || (guild != null && user == guild.ownerIdLong))
+            !(!view.admin || guild.isAdmin(user))
         }
         addFilter { user, guild, view ->
             !(!view.whitelist || (guild != null && bot.userWhitelisted(guild, user)))
@@ -102,11 +104,12 @@ class HelpCommands(
         } + helper.topics.values.fold("\n### Topics: (queried with `/help topic`)") { acc, view ->
             "$acc\n- **" + view.name + "**: " + view.shortDescription
         }
-        if(event.user.idLong == event.guild?.ownerIdLong)
+        if(event.guild.isAdmin(event.user.idLong))
             response = "For the bot to function, you must run `/setup` first. The channel chosen must be marked " +
                     "as nsfw per Discord's ToS, as the bot does kinda fall under that umbrella. The number of polls " +
                     "sent defaults to 5. To allow other users access to `/next` and a few other commands I have " +
-                    "planned, whitelist them using `/whitelist add`\n" + response
+                    "planned, whitelist them using `/whitelist add`\nThe bot cannot yet automatically " +
+                    "send polls, so you must call `/next` in order to send the next batch\n" + response
         event.hook.sendMessage(response).queue()
     }
 

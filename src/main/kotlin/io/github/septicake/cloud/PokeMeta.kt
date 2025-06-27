@@ -26,6 +26,7 @@ object PokeMeta {
     val LONG_DESCRIPTION: CloudKey<String> = cloudKey("long-description")
     val CATEGORY_NAME: CloudKey<String> = cloudKey("category-name")
     val CATEGORY_DESCRIPTION: CloudKey<String> = cloudKey("category-description")
+    val HIDDEN: CloudKey<Boolean> = cloudKey("hidden")
 
     @Suppress("UNUSED_PARAMETER")
     fun <T> blacklistSensitiveModifier(blacklistSensitive: BlacklistSensitive, builder: Builder<T>): Builder<T> {
@@ -73,5 +74,10 @@ object PokeMeta {
     fun <T> categoryModifier(category: Category, builder: Builder<T>): Builder<T> {
         return builder.meta(CATEGORY_NAME, category.category.categoryName)
             .meta(CATEGORY_DESCRIPTION, category.category.description)
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun <T> hiddenModifier(hidden: Hidden, builder: Builder<T>): Builder<T> {
+        return builder.meta(HIDDEN, true)
     }
 }

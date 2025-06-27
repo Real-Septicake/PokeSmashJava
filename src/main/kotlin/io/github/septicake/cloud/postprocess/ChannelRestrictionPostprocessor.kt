@@ -1,6 +1,7 @@
 package io.github.septicake.cloud.postprocess
 
 import io.github.septicake.PokeSmashBot
+import io.github.septicake.PokeSmashConstants
 import io.github.septicake.cloud.PokeMeta
 import io.github.septicake.db.FilterReason
 import io.github.septicake.db.GuildEntity
@@ -30,7 +31,8 @@ class ChannelRestrictionPostprocessor<C>(
                 GuildEntity.findById(guild.idLong)
             }
             if(info == null) {
-                interaction.reply("Server has not yet been populated.").setEphemeral(true).complete()
+                interaction.reply(PokeSmashConstants.Errors.NOT_POPULATED)
+                    .setEphemeral(true).complete()
                 transaction(bot.db) { usage.result = FilterReason.NOT_POPULATED }
                 ConsumerService.interrupt()
                 return

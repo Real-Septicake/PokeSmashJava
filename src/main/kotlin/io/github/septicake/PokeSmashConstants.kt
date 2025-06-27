@@ -9,4 +9,8 @@ object PokeSmashConstants {
 
     val PollCheckIdentity = "PollCheck"
     val UsageClearIdentity = "UsageClear"
+
+    object Errors {
+        const val NOT_POPULATED = "Server has not yet been populated, get an admin to run `/setup`"
+    }
 }

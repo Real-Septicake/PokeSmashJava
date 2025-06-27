@@ -34,7 +34,8 @@ class HelpCommandHelper(
             meta.getOrDefault(PokeMeta.CATEGORY_DESCRIPTION, "[No Description]"),
             meta.getOrDefault(PokeMeta.BOT_OWNER_ONLY, false),
             meta.getOrDefault(PokeMeta.ADMIN_ONLY, false),
-            meta.getOrDefault(PokeMeta.WHITELIST_ONLY, false)
+            meta.getOrDefault(PokeMeta.WHITELIST_ONLY, false),
+            meta.getOrDefault(PokeMeta.HIDDEN, false)
         )
     }
 
@@ -96,8 +97,9 @@ class HelpCommandHelper(
         val category: String,
         val categoryDescription: String,
         val botOwner: Boolean,
-        val guildOwner: Boolean,
-        val whitelist: Boolean
+        val admin: Boolean,
+        val whitelist: Boolean,
+        val hidden: Boolean
     )
 
     data class CategoryView(

@@ -17,11 +17,7 @@ import io.github.septicake.db.*
 import io.github.septicake.jobs.PollCheck
 import io.github.septicake.jobs.UsageClear
 import io.github.septicake.listeners.MessageListener
-import io.github.septicake.util.ScheduledThreadPool
-import io.github.septicake.util.currentThread
-import io.github.septicake.util.getEnv
-import io.github.septicake.util.processors
-import io.github.septicake.util.runtime
+import io.github.septicake.util.*
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.Guild
 import org.incendo.cloud.annotations.AnnotationParser
@@ -50,7 +46,6 @@ import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.datetime.Clock
-import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
 import org.jetbrains.exposed.sql.*
@@ -111,6 +106,7 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
         registerBuilderModifier(ProperName::class.java, PokeMeta::properNameModifier)
         registerBuilderModifier(LongDescription::class.java, PokeMeta::longDescriptionModifier)
         registerBuilderModifier(Category::class.java, PokeMeta::categoryModifier)
+        registerBuilderModifier(Hidden::class.java, PokeMeta::hiddenModifier)
 
         registerPreprocessorMapper(LengthMax::class.java) { annotation ->
             LengthMaxComponentPreprocessor<JDAInteraction>(annotation.length)
@@ -288,7 +284,7 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
             return true
         if (user in PokeSmashConstants.whitelist)
             return true
-        if (guild.getMemberById(user)?.hasPermission(Permission.ADMINISTRATOR) == true)
+        if (guild.isAdmin(user))
             return true
 
         return userServerWhitelisted(guild.idLong, user)
@@ -482,5 +478,4 @@ class PokeSmashBot(builder: JDABuilder) : CoroutineScope {
     }
 
     class ServerNotPopulatedException : IllegalStateException()
-    class PollDoesNotExistException : IllegalStateException()
 }

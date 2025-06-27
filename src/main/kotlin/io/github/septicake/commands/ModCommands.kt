@@ -109,7 +109,7 @@ class ModCommands(
                 GuildEntity.findById(event.guild!!.idLong)
             }
             if (info == null) {
-                event.hook.sendMessage("Server has not been populated yet.").await()
+                event.hook.sendMessage("Server has not been populated yet, call `/setup` to do so").await()
                 return
             } else {
                 transaction(bot.db) {

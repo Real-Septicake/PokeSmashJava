@@ -4,6 +4,7 @@ package io.github.septicake.commands
 
 import dev.minn.jda.ktx.coroutines.await
 import io.github.septicake.PokeSmashBot
+import io.github.septicake.PokeSmashConstants
 import io.github.septicake.cloud.annotations.*
 import io.github.septicake.db.GuildEntity
 import io.github.septicake.db.PokemonTable
@@ -52,7 +53,7 @@ class PokeCommands(
             GuildEntity.findById(event.guild!!.idLong)
         }
         if (info == null) {
-            event.hook.sendMessage("Server has not been populated yet.").queue()
+            event.hook.sendMessage(PokeSmashConstants.Errors.NOT_POPULATED).queue()
         } else {
             transaction(bot.db) { info.offset = 0 }
             event.hook.sendMessage("Reset successful").queue()
@@ -77,7 +78,7 @@ class PokeCommands(
             GuildEntity.findById(event.guild!!.idLong)
         }
         if (info == null) {
-            event.hook.sendMessage("Server has not been populated yet.").queue()
+            event.hook.sendMessage(PokeSmashConstants.Errors.NOT_POPULATED).queue()
         } else {
             if (!event.guild!!.selfMember.hasPermission(
                     event.guildChannel,
