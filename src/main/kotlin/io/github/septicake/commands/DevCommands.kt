@@ -4,10 +4,7 @@ package io.github.septicake.commands
 
 import io.github.septicake.PokeSmashBot
 import io.github.septicake.cloud.annotations.*
-import io.github.septicake.db.BlacklistEntity
-import io.github.septicake.db.GuildEntity
-import io.github.septicake.db.GuildTable
-import io.github.septicake.db.WhitelistTable
+import io.github.septicake.db.*
 import io.github.septicake.util.sendMessage
 import io.github.septicake.util.toDiscordTimestamp
 import kotlinx.datetime.Clock
@@ -20,6 +17,7 @@ import org.incendo.cloud.annotations.CommandDescription
 import org.incendo.cloud.annotations.Default
 import org.incendo.cloud.discord.jda5.JDAInteraction
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.count
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.kotlin.error
@@ -50,6 +48,7 @@ class DevCommands(
     @Command("whitelist strip <user>")
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
+    @CommandParams("user")
     @CommandDescription("Strips user of whitelist permissions")
     @ProperName("Strip whitelist")
     @LongDescription(
@@ -357,8 +356,8 @@ class DevCommands(
     @ChannelRestriction(devChannel = true)
     @UserPermissions(botOwnerOnly = true)
     @CommandParams("msg")
-    @CommandDescription("Alert guild owners")
     @ProperName("Alert")
+    @CommandDescription("Alert guild owners")
     @LongDescription("Send a message to the owners of all guilds the bot is in")
     fun alertCommand(
         interaction: JDAInteraction,
@@ -376,5 +375,40 @@ class DevCommands(
             }, {})
         }
         event.hook.sendMessage("Alert sent to $total guild owners").queue()
+    }
+
+    @Command("stats")
+    @ChannelRestriction(devChannel = true)
+    @UserPermissions(botOwnerOnly = true)
+    @ProperName("Stats")
+    @CommandDescription("Get stats on command usage")
+    @LongDescription("Get stats on what commands are being used")
+    fun statsCommand(
+        interaction: JDAInteraction
+    ) {
+        val event = interaction.interactionEvent() ?: return
+        event.deferReply().setEphemeral(true).queue()
+
+        val result = transaction(bot.db) {
+            val categories = UsageTable.select(UsageTable.category, UsageTable.category.count()).groupBy(UsageTable.category).map {
+                Pair(it[UsageTable.category], it[UsageTable.category.count()])
+            }
+            val commands = UsageTable.select(UsageTable.commandName, UsageTable.commandName.count()).groupBy(UsageTable.commandName).map {
+                Pair(it[UsageTable.commandName], it[UsageTable.commandName.count()])
+            }
+
+            Pair(categories, commands)
+        }
+
+        event.hook.sendMessage(buildString {
+            this.append("### Categories:\n")
+            result.first.forEach {
+                this.append("- " + it.first + ": " + it.second + "\n")
+            }
+            this.append("### Commands:\n")
+            result.second.forEach {
+                this.append("- " + it.first + ": " + it.second + "\n")
+            }
+        }).queue()
     }
 }
